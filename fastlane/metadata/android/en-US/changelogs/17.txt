@@ -1,2 +1,0 @@
-Add option to adjust volume
-Bugfixes
