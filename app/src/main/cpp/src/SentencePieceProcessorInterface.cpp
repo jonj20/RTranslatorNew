@@ -27,19 +27,19 @@ std::vector<int> jintArrayTointVector(JNIEnv* env, jintArray jarray);
 jstring stringToJstring(JNIEnv* env, std::string str);
 
 extern "C" jlong
-Java_nie_translator_rtranslator_voice_1translation_neural_1networks_translation_SentencePieceProcessorJava_SentencePieceProcessorNative(JNIEnv* env,jobject){
+Java_nie_translator_rtranslator_neural_1networks_translation_SentencePieceProcessorJava_SentencePieceProcessorNative(JNIEnv* env,jobject){
     return (long)(new SentencePieceProcessor());
 }
 
 extern "C" void
-Java_nie_translator_rtranslator_voice_1translation_neural_1networks_translation_SentencePieceProcessorJava_LoadNative(JNIEnv* env,jobject,jlong processor, jstring vocab_file){
+Java_nie_translator_rtranslator_neural_1networks_translation_SentencePieceProcessorJava_LoadNative(JNIEnv* env,jobject,jlong processor, jstring vocab_file){
     SentencePieceProcessor *proc = (SentencePieceProcessor *)processor;
     std::string vocab_file_string = jstringToString(env,vocab_file);
     (*proc).Load(vocab_file_string);
 }
 
 extern "C" jintArray
-Java_nie_translator_rtranslator_voice_1translation_neural_1networks_translation_SentencePieceProcessorJava_encodeNative(JNIEnv* env,jobject,jlong processor, jstring text){
+Java_nie_translator_rtranslator_neural_1networks_translation_SentencePieceProcessorJava_encodeNative(JNIEnv* env,jobject,jlong processor, jstring text){
     SentencePieceProcessor *proc = (SentencePieceProcessor *)processor;
     std::vector<int> ids(1024,0);
     std::string string = jstringToString(env,text);
@@ -48,13 +48,13 @@ Java_nie_translator_rtranslator_voice_1translation_neural_1networks_translation_
 }
 
 extern "C" jint
-Java_nie_translator_rtranslator_voice_1translation_neural_1networks_translation_SentencePieceProcessorJava_PieceToIDNative(JNIEnv* env,jobject,jlong processor, jstring token){
+Java_nie_translator_rtranslator_neural_1networks_translation_SentencePieceProcessorJava_PieceToIDNative(JNIEnv* env,jobject,jlong processor, jstring token){
     SentencePieceProcessor *proc = (SentencePieceProcessor *)processor;
     return (*proc).PieceToId(jstringToString(env,token));
 }
 
 extern "C" jstring
-Java_nie_translator_rtranslator_voice_1translation_neural_1networks_translation_SentencePieceProcessorJava_IDToPieceNative(JNIEnv* env,jobject,jlong processor, jint id){
+Java_nie_translator_rtranslator_neural_1networks_translation_SentencePieceProcessorJava_IDToPieceNative(JNIEnv* env,jobject,jlong processor, jint id){
     //this method doesn't work and I don't understand why, for now I will manually translate one token at a time with the IdToPiece method.
     SentencePieceProcessor *proc = (SentencePieceProcessor *)processor;
     int idConverted = (int) id;
@@ -63,7 +63,7 @@ Java_nie_translator_rtranslator_voice_1translation_neural_1networks_translation_
 }
 
 extern "C" jstring
-Java_nie_translator_rtranslator_voice_1translation_neural_1networks_translation_SentencePieceProcessorJava_decodeNative(JNIEnv* env,jobject,jlong processor, jintArray ids){
+Java_nie_translator_rtranslator_neural_1networks_translation_SentencePieceProcessorJava_decodeNative(JNIEnv* env,jobject,jlong processor, jintArray ids){
     SentencePieceProcessor *proc = (SentencePieceProcessor *)processor;
     std::vector<int> idsConverted = jintArrayTointVector(env,ids);
 
