@@ -125,7 +125,7 @@ private:
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_initialize(JNIEnv *env,
+Java_nie_translator_rtranslator_neural_1networks_nn_CacheContainerNative_initialize(JNIEnv *env,
                                      jobject thiz,
                                      jint dim1, jint dim2,
                                      jint dim3, jint dim4, jint dim5) {
@@ -135,7 +135,7 @@ Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_initialize(JNIEnv 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_insertValues(JNIEnv *env,
+Java_nie_translator_rtranslatorneural_1networks_nn_CacheContainerNative_insertValues(JNIEnv *env,
                                      jobject thiz,
                                      jlong cacheContainerPointer, jint index, jobject data) {
     __android_log_print(ANDROID_LOG_ERROR, "CACHE CONTAINER NATIVE", "%s", "inserting data");
@@ -145,7 +145,7 @@ Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_insertValues(JNIEn
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_reorder(JNIEnv *env,
+Java_nie_translator_rtranslatorneural_1networks_nn_CacheContainerNative_reorder(JNIEnv *env,
                                        jobject thiz,
                                        jlong cacheContainerPointer, jintArray indexes) {
     __android_log_print(ANDROID_LOG_ERROR, "CACHE CONTAINER NATIVE", "%s", "reordering cache");
@@ -156,7 +156,7 @@ Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_reorder(JNIEnv *en
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_getBuffer(JNIEnv *env,
+Java_nie_translator_rtranslatorneural_1networks_nn_CacheContainerNative_getBuffer(JNIEnv *env,
                                       jobject thiz,
                                       jlong cacheContainerPointer, jint index) {
     __android_log_print(ANDROID_LOG_ERROR, "CACHE CONTAINER NATIVE", "%s", "get cache buffer");
@@ -166,7 +166,7 @@ Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_getBuffer(JNIEnv *
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_nie_translator_rtranslator_tools_nn_CacheContainerNative_close(JNIEnv *env,
+Java_nie_translator_rtranslatorneural_1networks_nn_CacheContainerNative_close(JNIEnv *env,
                                         jobject thiz,
                                         jlong cacheContainerPointer) {
     __android_log_print(ANDROID_LOG_ERROR, "CACHE CONTAINER NATIVE", "%s", "closing cache container");
