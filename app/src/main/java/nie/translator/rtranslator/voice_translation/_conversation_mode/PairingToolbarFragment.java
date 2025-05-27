@@ -26,9 +26,9 @@ import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.R;
-import nie.translator.rtranslator.tools.Tools;
-import nie.translator.rtranslator.tools.gui.ButtonSearch;
-import nie.translator.rtranslator.tools.gui.animations.CustomAnimator;
+import nie.translator.rtranslator.utils.Tools;
+import nie.translator.rtranslator.utils.gui.ButtonSearch;
+import nie.translator.rtranslator.utils.gui.animations.CustomAnimator;
 import nie.translator.rtranslator.voice_translation.VoiceTranslationActivity;
 
 

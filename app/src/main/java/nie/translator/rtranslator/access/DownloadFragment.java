@@ -32,7 +32,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -42,8 +41,8 @@ import java.io.File;
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.LoadingActivity;
 import nie.translator.rtranslator.R;
-import nie.translator.rtranslator.tools.FileTools;
-import nie.translator.rtranslator.voice_translation.neural_networks.NeuralNetworkApi;
+import nie.translator.rtranslator.utils.FileTools;
+import nie.translator.rtranslator.neural_networks.NeuralNetworkApi;
 
 public class DownloadFragment extends Fragment {
     public static final String[] DOWNLOAD_URLS = {

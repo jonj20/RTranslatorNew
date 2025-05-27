@@ -17,35 +17,26 @@
 package nie.translator.rtranslator.voice_translation;
 
 import android.content.DialogInterface;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.annotation.CallSuper;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
-import java.util.ArrayList;
+
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.R;
-import nie.translator.rtranslator.tools.ErrorCodes;
-import nie.translator.rtranslator.tools.gui.ButtonKeyboard;
-import nie.translator.rtranslator.tools.gui.ButtonMic;
-import nie.translator.rtranslator.tools.gui.ButtonSound;
-import nie.translator.rtranslator.tools.gui.DeactivableButton;
-import nie.translator.rtranslator.tools.gui.MicrophoneComunicable;
-import nie.translator.rtranslator.tools.gui.messages.GuiMessage;
-import nie.translator.rtranslator.tools.gui.messages.MessagesAdapter;
+import nie.translator.rtranslator.utils.ErrorCodes;
+import nie.translator.rtranslator.utils.gui.DeactivableButton;
+import nie.translator.rtranslator.utils.gui.MicrophoneComunicable;
+import nie.translator.rtranslator.utils.gui.messages.MessagesAdapter;
 
 public abstract class VoiceTranslationFragment extends Fragment implements MicrophoneComunicable {
     //gui

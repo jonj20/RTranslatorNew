@@ -31,10 +31,10 @@ import androidx.preference.PreferenceViewHolder;
 import java.util.ArrayList;
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.R;
-import nie.translator.rtranslator.tools.CustomLocale;
-import nie.translator.rtranslator.tools.ErrorCodes;
-import nie.translator.rtranslator.tools.Tools;
-import nie.translator.rtranslator.tools.gui.LanguageListAdapter;
+import nie.translator.rtranslator.utils.CustomLocale;
+import nie.translator.rtranslator.utils.ErrorCodes;
+import nie.translator.rtranslator.utils.Tools;
+import nie.translator.rtranslator.utils.gui.LanguageListAdapter;
 
 public class LanguagePreference extends Preference {
     private SettingsFragment fragment;

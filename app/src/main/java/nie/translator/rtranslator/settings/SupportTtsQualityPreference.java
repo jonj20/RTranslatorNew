@@ -25,9 +25,9 @@ import androidx.preference.PreferenceViewHolder;
 import androidx.preference.SwitchPreference;
 import java.util.ArrayList;
 import nie.translator.rtranslator.Global;
-import nie.translator.rtranslator.tools.CustomLocale;
-import nie.translator.rtranslator.tools.ErrorCodes;
-import nie.translator.rtranslator.voice_translation.neural_networks.translation.Translator;
+import nie.translator.rtranslator.utils.CustomLocale;
+import nie.translator.rtranslator.utils.ErrorCodes;
+import nie.translator.rtranslator.neural_networks.translation.Translator;
 
 public class SupportTtsQualityPreference extends SwitchPreference {
     private SettingsFragment fragment;

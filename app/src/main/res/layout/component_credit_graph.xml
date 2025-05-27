@@ -22,7 +22,7 @@
 
     <view
         android:id="@+id/graph"
-        class="nie.translator.rtranslator.tools.gui.CustomDayGraphsPagerAdapter$DateGraph"
+        class="nie.translator.rtranslator.utils.gui.CustomDayGraphsPagerAdapter$DateGraph"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"

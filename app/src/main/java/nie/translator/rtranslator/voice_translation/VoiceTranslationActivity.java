@@ -50,11 +50,11 @@ import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.R;
 import nie.translator.rtranslator.bluetooth.BluetoothCommunicator;
 import nie.translator.rtranslator.settings.SettingsActivity;
-import nie.translator.rtranslator.tools.CustomLocale;
-import nie.translator.rtranslator.tools.CustomServiceConnection;
-import nie.translator.rtranslator.tools.Tools;
-import nie.translator.rtranslator.tools.gui.peers.GuiPeer;
-import nie.translator.rtranslator.tools.services_communication.ServiceCommunicatorListener;
+import nie.translator.rtranslator.utils.CustomLocale;
+import nie.translator.rtranslator.utils.CustomServiceConnection;
+import nie.translator.rtranslator.utils.Tools;
+import nie.translator.rtranslator.utils.gui.peers.GuiPeer;
+import nie.translator.rtranslator.utils.services_communication.ServiceCommunicatorListener;
 import nie.translator.rtranslator.voice_translation._conversation_mode.PairingFragment;
 import nie.translator.rtranslator.voice_translation._conversation_mode._conversation.ConversationFragment;
 import nie.translator.rtranslator.voice_translation._conversation_mode._conversation.ConversationService;
@@ -63,8 +63,8 @@ import nie.translator.rtranslator.voice_translation._conversation_mode.communica
 import nie.translator.rtranslator.bluetooth.Peer;
 
 import nie.translator.rtranslator.voice_translation._text_translation.TranslationFragment;
-import nie.translator.rtranslator.voice_translation._walkie_talkie_mode._walkie_talkie.WalkieTalkieFragment;
-import nie.translator.rtranslator.voice_translation._walkie_talkie_mode._walkie_talkie.WalkieTalkieService;
+import nie.translator.rtranslator.voice_translation._walkie_talkie_mode.WalkieTalkieFragment;
+import nie.translator.rtranslator.voice_translation._walkie_talkie_mode.WalkieTalkieService;
 
 
 public class VoiceTranslationActivity extends GeneralActivity {

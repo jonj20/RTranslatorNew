@@ -17,7 +17,6 @@
 package nie.translator.rtranslator.settings;
 
 import android.content.Context;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ImageButton;
@@ -34,7 +33,7 @@ import java.util.Locale;
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.R;
 import nie.translator.rtranslator.voice_translation._text_translation.TranslationFragment;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.Recorder;
+import nie.translator.rtranslator.neural_networks.voice.Recorder;
 
 
 public class SeekBarPreference extends Preference {

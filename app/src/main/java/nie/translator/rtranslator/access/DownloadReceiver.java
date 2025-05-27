@@ -30,8 +30,8 @@ import java.io.File;
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.LoadingActivity;
 import nie.translator.rtranslator.R;
-import nie.translator.rtranslator.tools.FileTools;
-import nie.translator.rtranslator.voice_translation.neural_networks.NeuralNetworkApi;
+import nie.translator.rtranslator.utils.FileTools;
+import nie.translator.rtranslator.neural_networks.NeuralNetworkApi;
 
 public class DownloadReceiver extends BroadcastReceiver {
     @Override

@@ -34,14 +34,14 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import nie.translator.rtranslator.GeneralService;
 import nie.translator.rtranslator.bluetooth.tools.Timer;
-import nie.translator.rtranslator.tools.CustomLocale;
-import nie.translator.rtranslator.tools.TTS;
-import nie.translator.rtranslator.tools.Tools;
-import nie.translator.rtranslator.tools.gui.messages.GuiMessage;
-import nie.translator.rtranslator.tools.services_communication.ServiceCallback;
-import nie.translator.rtranslator.tools.services_communication.ServiceCommunicator;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.RecognizerListener;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.Recorder;
+import nie.translator.rtranslator.utils.CustomLocale;
+import nie.translator.rtranslator.neural_networks.tts.TTS;
+import nie.translator.rtranslator.utils.Tools;
+import nie.translator.rtranslator.utils.gui.messages.GuiMessage;
+import nie.translator.rtranslator.utils.services_communication.ServiceCallback;
+import nie.translator.rtranslator.utils.services_communication.ServiceCommunicator;
+import nie.translator.rtranslator.neural_networks.voice.RecognizerListener;
+import nie.translator.rtranslator.neural_networks.voice.Recorder;
 
 
 public abstract class VoiceTranslationService extends GeneralService {

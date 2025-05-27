@@ -19,8 +19,8 @@ package nie.translator.rtranslator.voice_translation._conversation_mode._convers
 import android.os.Parcel;
 import android.os.Parcelable;
 import nie.translator.rtranslator.bluetooth.Peer;
-import nie.translator.rtranslator.voice_translation.neural_networks.NeuralNetworkApiResult;
-import nie.translator.rtranslator.voice_translation.neural_networks.NeuralNetworkApiText;
+import nie.translator.rtranslator.neural_networks.NeuralNetworkApiResult;
+import nie.translator.rtranslator.neural_networks.NeuralNetworkApiText;
 
 
 public class ConversationMessage implements Parcelable, Cloneable {

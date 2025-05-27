@@ -85,7 +85,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <nie.translator.rtranslator.tools.gui.ButtonSearch
+    <nie.translator.rtranslator.utils.gui.ButtonSearch
         android:id="@+id/searchButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -284,7 +284,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
-                    <nie.translator.rtranslator.tools.gui.ButtonSound
+                    <nie.translator.rtranslator.utils.gui.ButtonSound
                         android:id="@+id/buttonSound"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -322,7 +322,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
-                    <nie.translator.rtranslator.tools.gui.ButtonKeyboard
+                    <nie.translator.rtranslator.utils.gui.ButtonKeyboard
                         android:id="@+id/buttonKeyboard"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -397,7 +397,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center">
 
-                            <nie.translator.rtranslator.tools.gui.ButtonMic
+                            <nie.translator.rtranslator.utils.gui.ButtonMic
                                 android:id="@+id/buttonMic"
                                 android:layout_width="66dp"
                                 android:layout_height="66dp"

@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import nie.translator.rtranslator.database.AppDatabase;
 import nie.translator.rtranslator.database.dao.MyDao;
 import nie.translator.rtranslator.database.entities.RecentPeerEntity;
-import nie.translator.rtranslator.tools.Tools;
+import nie.translator.rtranslator.utils.Tools;
 
 public class RecentPeersDataManager {
     private AppDatabase database;

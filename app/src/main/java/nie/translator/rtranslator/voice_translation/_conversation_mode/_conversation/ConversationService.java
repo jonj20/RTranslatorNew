@@ -26,24 +26,21 @@ import androidx.annotation.NonNull;
 import java.util.ArrayList;
 
 import nie.translator.rtranslator.Global;
-import nie.translator.rtranslator.tools.BluetoothHeadsetUtils;
-import nie.translator.rtranslator.tools.CustomLocale;
-import nie.translator.rtranslator.tools.TTS;
-import nie.translator.rtranslator.tools.Tools;
-import nie.translator.rtranslator.tools.gui.messages.GuiMessage;
-import nie.translator.rtranslator.tools.gui.peers.GuiPeer;
+import nie.translator.rtranslator.utils.BluetoothHeadsetUtils;
+import nie.translator.rtranslator.utils.CustomLocale;
+import nie.translator.rtranslator.utils.Tools;
+import nie.translator.rtranslator.utils.gui.messages.GuiMessage;
+import nie.translator.rtranslator.utils.gui.peers.GuiPeer;
 import nie.translator.rtranslator.voice_translation.VoiceTranslationService;
 import nie.translator.rtranslator.voice_translation._conversation_mode.communication.ConversationBluetoothCommunicator;
 
 import nie.translator.rtranslator.bluetooth.Message;
 import nie.translator.rtranslator.bluetooth.Peer;
-import nie.translator.rtranslator.voice_translation._walkie_talkie_mode._walkie_talkie.WalkieTalkieService;
-import nie.translator.rtranslator.voice_translation.neural_networks.NeuralNetworkApiText;
-import nie.translator.rtranslator.voice_translation.neural_networks.translation.Translator;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.Recognizer;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.VadRecognizer;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.RecognizerListener;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.Recorder;
+import nie.translator.rtranslator.neural_networks.NeuralNetworkApiText;
+import nie.translator.rtranslator.neural_networks.translation.Translator;
+import nie.translator.rtranslator.neural_networks.voice.VadRecognizer;
+import nie.translator.rtranslator.neural_networks.voice.RecognizerListener;
+import nie.translator.rtranslator.neural_networks.voice.Recorder;
 
 
 public class ConversationService extends VoiceTranslationService {

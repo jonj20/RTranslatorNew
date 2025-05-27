@@ -27,12 +27,12 @@ import android.os.Looper;
 import androidx.appcompat.app.AlertDialog;
 import java.util.ArrayList;
 import nie.translator.rtranslator.access.AccessActivity;
-import nie.translator.rtranslator.tools.CustomLocale;
-import nie.translator.rtranslator.tools.ErrorCodes;
-import nie.translator.rtranslator.tools.ImageActivity;
+import nie.translator.rtranslator.utils.CustomLocale;
+import nie.translator.rtranslator.utils.ErrorCodes;
+import nie.translator.rtranslator.utils.ImageActivity;
 import nie.translator.rtranslator.voice_translation.VoiceTranslationActivity;
-import nie.translator.rtranslator.voice_translation.neural_networks.NeuralNetworkApi;
-import nie.translator.rtranslator.voice_translation.neural_networks.translation.Translator;
+import nie.translator.rtranslator.neural_networks.NeuralNetworkApi;
+import nie.translator.rtranslator.neural_networks.translation.Translator;
 
 import androidx.core.splashscreen.SplashScreen;
 

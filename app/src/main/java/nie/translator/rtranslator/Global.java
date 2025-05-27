@@ -38,18 +38,18 @@ import java.io.File;
 import java.util.ArrayList;
 
 import nie.translator.rtranslator.access.AccessActivity;
-import nie.translator.rtranslator.tools.CustomLocale;
-import nie.translator.rtranslator.tools.TTS;
+import nie.translator.rtranslator.utils.CustomLocale;
+import nie.translator.rtranslator.neural_networks.tts.TTS;
 import nie.translator.rtranslator.voice_translation._conversation_mode.communication.ConversationBluetoothCommunicator;
 import nie.translator.rtranslator.bluetooth.BluetoothCommunicator;
 import nie.translator.rtranslator.bluetooth.Peer;
 import nie.translator.rtranslator.voice_translation._conversation_mode.communication.recent_peer.RecentPeersDataManager;
 import nie.translator.rtranslator.voice_translation._text_translation.TranslationFragment;
-import nie.translator.rtranslator.voice_translation.neural_networks.NeuralNetworkApi;
-import nie.translator.rtranslator.voice_translation.neural_networks.translation.Translator;
+import nie.translator.rtranslator.neural_networks.NeuralNetworkApi;
+import nie.translator.rtranslator.neural_networks.translation.Translator;
 //import nie.translator.rtranslator.voice_translation.neural_networks.voice.Recognizer;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.VadRecognizer;
-import nie.translator.rtranslator.voice_translation.neural_networks.voice.Recorder;
+import nie.translator.rtranslator.neural_networks.voice.VadRecognizer;
+import nie.translator.rtranslator.neural_networks.voice.Recorder;
 
 
 public class Global extends Application implements DefaultLifecycleObserver {

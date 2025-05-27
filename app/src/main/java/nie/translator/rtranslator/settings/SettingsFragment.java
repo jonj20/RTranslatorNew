@@ -37,10 +37,10 @@ import androidx.preference.PreferenceGroupAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import nie.translator.rtranslator.tools.GalleryImageSelector;
+import nie.translator.rtranslator.utils.GalleryImageSelector;
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.R;
-import nie.translator.rtranslator.tools.ErrorCodes;
+import nie.translator.rtranslator.utils.ErrorCodes;
 
 
 public class SettingsFragment extends PreferenceFragmentCompat {

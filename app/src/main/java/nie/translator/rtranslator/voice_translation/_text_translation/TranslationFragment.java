@@ -47,17 +47,17 @@ import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.R;
 import nie.translator.rtranslator.bluetooth.Message;
 import nie.translator.rtranslator.settings.SettingsActivity;
-import nie.translator.rtranslator.tools.CustomLocale;
-import nie.translator.rtranslator.tools.ErrorCodes;
-import nie.translator.rtranslator.tools.TTS;
-import nie.translator.rtranslator.tools.Tools;
-import nie.translator.rtranslator.tools.gui.AnimatedTextView;
-import nie.translator.rtranslator.tools.gui.GuiTools;
-import nie.translator.rtranslator.tools.gui.LanguageListAdapter;
-import nie.translator.rtranslator.tools.gui.animations.CustomAnimator;
-import nie.translator.rtranslator.tools.gui.messages.GuiMessage;
+import nie.translator.rtranslator.utils.CustomLocale;
+import nie.translator.rtranslator.utils.ErrorCodes;
+import nie.translator.rtranslator.neural_networks.tts.TTS;
+import nie.translator.rtranslator.utils.Tools;
+import nie.translator.rtranslator.utils.gui.AnimatedTextView;
+import nie.translator.rtranslator.utils.gui.GuiTools;
+import nie.translator.rtranslator.utils.gui.LanguageListAdapter;
+import nie.translator.rtranslator.utils.gui.animations.CustomAnimator;
+import nie.translator.rtranslator.utils.gui.messages.GuiMessage;
 import nie.translator.rtranslator.voice_translation.VoiceTranslationActivity;
-import nie.translator.rtranslator.voice_translation.neural_networks.translation.Translator;
+import nie.translator.rtranslator.neural_networks.translation.Translator;
 
 public class TranslationFragment extends Fragment {
     public static final int DEFAULT_BEAM_SIZE = 1;

@@ -23,8 +23,8 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import java.util.Objects;
-import nie.translator.rtranslator.tools.gui.peers.GuiPeer;
-import nie.translator.rtranslator.tools.gui.peers.Listable;
+import nie.translator.rtranslator.utils.gui.peers.GuiPeer;
+import nie.translator.rtranslator.utils.gui.peers.Listable;
 import nie.translator.rtranslator.bluetooth.Peer;
 
 

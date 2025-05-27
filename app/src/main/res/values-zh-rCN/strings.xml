@@ -87,7 +87,7 @@
     <string name="home_walkietalkie_mode">对讲机模式</string>
     <string name="home_conversation_mode">对话模式</string>
     <string name="title_fragment_conversation">对话</string>
-    <string name="title_fragment_walkie_talkie">对讲机</string>
+    <string name="title_fragment_walkie_talkie">对讲</string>
     <string name="title_fragment_notice">注意</string>
     <string name="title_fragment_user_data">输入您的数据</string>
     <string name="title_fragment_download">模型下载</string>
@@ -106,7 +106,7 @@
     <string name="description_fragment_user_data">您的名字将显示给所有附近的设备，而您的个人资料照片仅显示在您已经进行过配对的设备上</string>
     <string name="description_fragment_download">现在 RTranslator 将下载翻译和语音识别所需的神经网络模型，完成后您可以开始使用应用程序（即使是在没有网络的状态下）。</string>
     <string name="description_conversation">对话模式是 RTranslator 的主要功能，它允许您实时翻译多个人之间的对话，为了更好的体验，建议将手机连接到蓝牙耳机，此外应用程序在后台运行和手机待机时也会继续工作（然而，一些手机在后台运行应用程序时可能会有性能问题）</string>
-    <string name="description_walkie_talkie">对讲机模式是 RTranslator 的次要功能，它不支持实时翻译，但只需要使用一部手机，它会自动检测并将语音从一种语言翻译成另一种语言，应用程序在后台运行和手机待机时也会继续工作</string>
+    <string name="description_walkie_talkie">对讲模式是 RTranslator 的次要功能，它不支持实时翻译，但只需要使用一部手机，它会自动检测并将语音从一种语言翻译成另一种语言，应用程序在后台运行和手机待机时也会继续工作</string>
     <string name="description_notice">RTranslator 使用 <a href="https://openai.com/index/whisper/">OpenAI 的 Whisper</a> 进行语音识别，使用 <a href="https://ai.meta.com/research/no-language-left-behind/">Meta 的 NLLB</a> 进行翻译，这些模型需要相当多的计算能力和至少 6GB 的内存来执行，所以请确保您使用的是现代智能手机，以避免速度变慢或崩溃。更多有关 RTranslator 的信息，请访问应用程序的 GitHub 项目<a href="https://github.com/niedev/RTranslator">点击这里</a></string>
 
     <string name="description_download">正在下载 %1$s</string>
