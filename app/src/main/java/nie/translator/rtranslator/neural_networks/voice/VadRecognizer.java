@@ -124,6 +124,10 @@ public class VadRecognizer extends NeuralNetworkApi {
             if (data != null) {
                 //we convert data in un audioTensor and start the transcription
                 //try {
+                    int batchSize1 = 1;
+                    if(data.languageCode2 != null){
+                        batchSize1 = 2;
+                    }
 
                     //float[] samples = new float[ret];
                     Log.e("recognizer","recognizing data[0]: " + data.data[0]);
@@ -131,10 +135,14 @@ public class VadRecognizer extends NeuralNetworkApi {
                         data.data[i] = data.data[i] / 32768.0f;
                     }
                     
-                    vadOfflineRecog.processSamples(data.data, new VadOfflineRecog.Callback() {
+                    vadOfflineRecog.processSamples(batchSize1, data.data, new VadOfflineRecog.Callback() {
                         @Override
-                        public void notify(String text) {
-                             notifyResult(correctText(text), data.languageCode, 0.9, true);
+                        public void notify(int batchSize, String text, String lang) {
+                            String secondText = UNDEFINED_TEXT;
+                            if(batchSize == 1)
+                               notifyResult(correctText(text), data.languageCode, 0.9, true);
+                            else if(batchSize == 2) 
+                               notifyMultiResult(correctText(text), data.languageCode, 0.9, correctText(secondText), data.languageCode2, 0.1);
                         }
                     });
 

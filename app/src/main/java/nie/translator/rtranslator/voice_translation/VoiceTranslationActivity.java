@@ -63,6 +63,8 @@ import nie.translator.rtranslator.voice_translation._conversation_mode.communica
 import nie.translator.rtranslator.bluetooth.Peer;
 
 import nie.translator.rtranslator.voice_translation._text_translation.TranslationFragment;
+import nie.translator.rtranslator.voice_translation._streaming_mode.StreamTranslationFragment;
+import nie.translator.rtranslator.voice_translation._streaming_mode.StreamTranslationService;
 import nie.translator.rtranslator.voice_translation._walkie_talkie_mode.WalkieTalkieFragment;
 import nie.translator.rtranslator.voice_translation._walkie_talkie_mode.WalkieTalkieService;
 
@@ -76,6 +78,7 @@ public class VoiceTranslationActivity extends GeneralActivity {
     public static final int CONVERSATION_FRAGMENT = 1;
     public static final int WALKIE_TALKIE_FRAGMENT = 2;
     public static final int TRANSLATION_FRAGMENT = 3;
+    public static final int STREAM_TRANSLATION_FRAGMENT = 4;
     public static final int DEFAULT_FRAGMENT = TRANSLATION_FRAGMENT;
     public static final int NO_PERMISSIONS = -10;
     private static final int REQUEST_CODE_REQUIRED_PERMISSIONS = 2;
@@ -89,6 +92,7 @@ public class VoiceTranslationActivity extends GeneralActivity {
     private ArrayList<Callback> clientsCallbacks = new ArrayList<>();
     private ArrayList<CustomServiceConnection> conversationServiceConnections = new ArrayList<>();
     private ArrayList<CustomServiceConnection> walkieTalkieServiceConnections = new ArrayList<>();
+    private ArrayList<CustomServiceConnection> streamTranslationServiceConnections = new ArrayList<>();
     private Handler mainHandler;  // handler that can be used to post to the main thread
     //variables
     private int connectionId = 1;
@@ -177,6 +181,7 @@ public class VoiceTranslationActivity extends GeneralActivity {
                 // possible stop of the Conversation and WalkieTalkie Service
                 stopConversationService();
                 stopWalkieTalkieService();
+                stopStreamTranslationService();
                 // possible setting of the fragment
                 if (getCurrentFragment() != PAIRING_FRAGMENT) {
                     if (Tools.hasPermissions(this, REQUIRED_PERMISSIONS)) {
@@ -244,6 +249,7 @@ public class VoiceTranslationActivity extends GeneralActivity {
                 // possible stop of the Conversation and WalkieTalkie Service
                 stopConversationService();
                 stopWalkieTalkieService();
+                stopStreamTranslationService();
                 // possible setting of the fragment
                 if (getCurrentFragment() != TRANSLATION_FRAGMENT) {
                     TranslationFragment translationFragment = new TranslationFragment();
@@ -259,6 +265,25 @@ public class VoiceTranslationActivity extends GeneralActivity {
                 }
                 break;
             }
+
+            case STREAM_TRANSLATION_FRAGMENT: {
+                // possible setting of the fragment
+                if (getCurrentFragment() != STREAM_TRANSLATION_FRAGMENT) {
+                    StreamTranslationFragment streamTranslationFragment = new StreamTranslationFragment();
+                    FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+                    Bundle bundle = new Bundle();
+                    bundle.putBoolean("firstStart", true);
+                    streamTranslationFragment.setArguments(bundle);
+                    transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+                    transaction.replace(R.id.fragment_container, streamTranslationFragment);
+                    transaction.commit();
+                    currentFragment = STREAM_TRANSLATION_FRAGMENT;
+                    saveFragment();
+                    //fragment=StreamTranslationFragment;
+                }
+                break;
+            }
+
         }
     }
 
@@ -293,6 +318,9 @@ public class VoiceTranslationActivity extends GeneralActivity {
                 }
                 if (currentFragment.getClass().equals(TranslationFragment.class)) {
                     return TRANSLATION_FRAGMENT;
+                }
+                if (currentFragment.getClass().equals(StreamTranslationFragment.class)) {
+                    return STREAM_TRANSLATION_FRAGMENT;
                 }
             }
         }
@@ -531,6 +559,42 @@ public class VoiceTranslationActivity extends GeneralActivity {
         });
     }
 
+
+    public void startStreamTranslationService(final Notification notification, final Global.ResponseListener responseListener) {
+        final Intent intent = new Intent(this, StreamTranslationService.class);
+        // initialization of the StreamTranslationService
+        global.getFirstLanguage(false, new Global.GetLocaleListener() {
+            @Override
+            public void onSuccess(CustomLocale result) {
+                intent.putExtra("firstLanguage", result);
+                global.getSecondLanguage(false, new Global.GetLocaleListener() {
+                    @Override
+                    public void onSuccess(CustomLocale result) {
+                        intent.putExtra("secondLanguage", result);
+                        if(NotificationManagerCompat.from(VoiceTranslationActivity.this).areNotificationsEnabled()) {
+                            intent.putExtra("notification", notification);
+                        }else{
+                            //Toast.makeText(VoiceTranslationActivity.this, getResources().getString(R.string.toast_missing_notification_permission), Toast.LENGTH_LONG).show();
+                        }
+                        startService(intent);
+                        responseListener.onSuccess();
+                    }
+
+                    @Override
+                    public void onFailure(int[] reasons, long value) {
+                        responseListener.onFailure(reasons, value);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(int[] reasons, long value) {
+                responseListener.onFailure(reasons, value);
+            }
+        });
+    }
+
+
     public synchronized void connectToConversationService(final VoiceTranslationService.VoiceTranslationServiceCallback callback, final ServiceCommunicatorListener responseListener) {
         // possible start of ConversationService
         startConversationService(buildNotification(CONVERSATION_FRAGMENT), new Global.ResponseListener() {
@@ -569,6 +633,25 @@ public class VoiceTranslationActivity extends GeneralActivity {
         });
     }
 
+    public synchronized void connectToStreamTranslationService(final VoiceTranslationService.VoiceTranslationServiceCallback callback, final ServiceCommunicatorListener responseListener) {
+        // possible start of StreamTranslationService
+        startStreamTranslationService(buildNotification(WALKIE_TALKIE_FRAGMENT), new Global.ResponseListener() {
+            @Override
+            public void onSuccess() {
+                CustomServiceConnection streamTranslationServiceConnection = new CustomServiceConnection(new StreamTranslationService.StreamTranslationServiceCommunicator(connectionId));
+                connectionId++;
+                streamTranslationServiceConnection.addCallbacks(callback, responseListener);
+                streamTranslationServiceConnections.add(streamTranslationServiceConnection);
+                bindService(new Intent(VoiceTranslationActivity.this, StreamTranslationService.class), streamTranslationServiceConnection, BIND_ABOVE_CLIENT);
+            }
+
+            @Override
+            public void onFailure(int[] reasons, long value) {
+                responseListener.onFailure(reasons, value);
+            }
+        });
+    }
+    
     public void disconnectFromConversationService(ConversationService.ConversationServiceCommunicator conversationServiceCommunicator) {
         int index = -1;
         boolean found = false;
@@ -601,12 +684,32 @@ public class VoiceTranslationActivity extends GeneralActivity {
         }
     }
 
+    public void disconnectFromStreamTranslationService(StreamTranslationService.StreamTranslationServiceCommunicator streamTranslationServiceCommunicator) {
+        int index = -1;
+        boolean found = false;
+        for (int i = 0; i < streamTranslationServiceConnections.size() && !found; i++) {
+            if (streamTranslationServiceConnections.get(i).getServiceCommunicator().equals(streamTranslationServiceCommunicator)) {
+                index = i;
+                found = true;
+            }
+        }
+        if (index != -1) {
+            CustomServiceConnection serviceConnection = streamTranslationServiceConnections.remove(index);
+            unbindService(serviceConnection);
+            serviceConnection.onServiceDisconnected();
+        }
+    }
+
     public void stopConversationService() {
         stopService(new Intent(this, ConversationService.class));
     }
 
     public void stopWalkieTalkieService() {
         stopService(new Intent(this, WalkieTalkieService.class));
+    }
+
+    public void stopStreamTranslationService() {
+        stopService(new Intent(this, StreamTranslationService.class));
     }
 
     //notification

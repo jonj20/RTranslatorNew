@@ -32,6 +32,8 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import android.widget.Toolbar;
+import android.widget.Button;
+import android.os.SystemClock;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
@@ -65,10 +67,12 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
     public static final int INITIALIZE = 0;
     public static final long LONG_PRESS_THRESHOLD_MS = 700;
     private boolean isMicAutomatic = true;
+    private boolean isAudioPathBTMode = false; //can switch audio path from bt to local according to button state
+    private boolean isAudioPathBT = false;
     private ConstraintLayout container;
-    protected ButtonMic microphone;
-    private ButtonMic leftMicrophone;
-    private ButtonMic rightMicrophone;
+    protected ButtonMic micBtn;
+    private ButtonMic leftMicBtn;
+    private ButtonMic rightMicBtn;
     private AnimatedTextView leftMicLanguage;
     private AnimatedTextView rightMicLanguage;
     private ConstraintLayout constraintLayout;
@@ -91,6 +95,18 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
     private String selectedLanguageCode;
     private AlertDialog dialog;
     private Handler mHandler = new Handler();
+
+
+    private void performButtonPressDown(AppCompatImageButton button) {
+        MotionEvent downEvent = MotionEvent.obtain(SystemClock.uptimeMillis(),
+                SystemClock.uptimeMillis(), MotionEvent.ACTION_DOWN, 0, 0, 0);
+        button.dispatchTouchEvent(downEvent); // 按下
+    }
+    private void performButtonPressUp(AppCompatImageButton button) {
+        MotionEvent upEvent = MotionEvent.obtain(SystemClock.uptimeMillis(),
+                SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, 0, 0, 0);
+        button.dispatchTouchEvent(upEvent); // 弹起
+    }
 
     public WalkieTalkieFragment() {
         // Required empty public constructor
@@ -118,12 +134,12 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
         secondLanguageSelector = view.findViewById(R.id.secondLanguageSelector);
         exitButton = view.findViewById(R.id.exitButton);
         sound = view.findViewById(R.id.soundButton);
-        microphone = view.findViewById(R.id.buttonMic);
-        microphone.initialize(this, view.findViewById(R.id.leftLine), view.findViewById(R.id.centerLine), view.findViewById(R.id.rightLine));
-        leftMicrophone = view.findViewById(R.id.buttonMicLeft);
-        leftMicrophone.initialize(null, view.findViewById(R.id.leftLineL), view.findViewById(R.id.centerLineL), view.findViewById(R.id.rightLineL));
-        rightMicrophone = view.findViewById(R.id.buttonMicRight);
-        rightMicrophone.initialize(null, view.findViewById(R.id.leftLineR), view.findViewById(R.id.centerLineR), view.findViewById(R.id.rightLineR));
+        micBtn = view.findViewById(R.id.buttonMic);
+        micBtn.initialize(this, view.findViewById(R.id.leftLine), view.findViewById(R.id.centerLine), view.findViewById(R.id.rightLine));
+        leftMicBtn = view.findViewById(R.id.buttonMicLeft);
+        leftMicBtn.initialize(null, view.findViewById(R.id.leftLineL), view.findViewById(R.id.centerLineL), view.findViewById(R.id.rightLineL));
+        rightMicBtn = view.findViewById(R.id.buttonMicRight);
+        rightMicBtn.initialize(null, view.findViewById(R.id.leftLineR), view.findViewById(R.id.centerLineR), view.findViewById(R.id.rightLineR));
         leftMicLanguage = view.findViewById(R.id.textButton1);
         rightMicLanguage = view.findViewById(R.id.textButton2);
         settingsButton = view.findViewById(R.id.settingsButton);
@@ -183,12 +199,12 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
             }
         });
 
-        microphone.setOnClickListenerForActivated(new View.OnClickListener() {
+        micBtn.setOnClickListenerForActivated(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (microphone.getState() == ButtonMic.STATE_NORMAL) {
+                if (micBtn.getState() == ButtonMic.STATE_NORMAL) {
                     if(isMicAutomatic) {
-                        if (microphone.isMute()) {
+                        if (micBtn.isMute()) {
                             startMicrophone(true);
                         } else {
                             stopMicrophone(true);
@@ -199,42 +215,42 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
                 }
             }
         });
-        microphone.setOnClickListenerForDeactivatedForMissingMicPermission(micMissingClickListener);
-        microphone.setOnClickListenerForDeactivated(deactivatedClickListener);
+        micBtn.setOnClickListenerForDeactivatedForMissingMicPermission(micMissingClickListener);
+        micBtn.setOnClickListenerForDeactivated(deactivatedClickListener);
 
-        leftMicrophone.setOnTouchListener(new View.OnTouchListener() {
+        leftMicBtn.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 switch(event.getAction()) {
                     case MotionEvent.ACTION_DOWN:  // PRESSED
-                        if (leftMicrophone.getActivationStatus() == DeactivableButton.ACTIVATED && leftMicrophone.getState() == ButtonMic.STATE_NORMAL) {
+                        if (leftMicBtn.getActivationStatus() == DeactivableButton.ACTIVATED && leftMicBtn.getState() == ButtonMic.STATE_NORMAL) {
                             if(isMicAutomatic) {
                                 switchMicMode(false);
                             }
-                            if(!leftMicrophone.isListening()){
+                            if(!leftMicBtn.isListening()){
                                 walkieTalkieServiceCommunicator.startRecognizingFirstLanguage();
-                                //leftMicrophone.onVoiceStarted();
+                                //leftMicBtn.onVoiceStarted();
                             }else{
-                                //leftMicrophone.onVoiceEnded();
+                                //leftMicBtn.onVoiceEnded();
                                 walkieTalkieServiceCommunicator.stopRecognizingFirstLanguage();
                             }
                             lastPressedLeftMic = System.currentTimeMillis();
                         }
                         return true;
                     case MotionEvent.ACTION_UP:  // RELEASED
-                        if(leftMicrophone.getActivationStatus() == DeactivableButton.ACTIVATED){
-                            if(leftMicrophone.getState() == ButtonMic.STATE_NORMAL && lastPressedLeftMic != -1){
+                        if(leftMicBtn.getActivationStatus() == DeactivableButton.ACTIVATED){
+                            if(leftMicBtn.getState() == ButtonMic.STATE_NORMAL && lastPressedLeftMic != -1){
                                 if(System.currentTimeMillis() - lastPressedLeftMic <= LONG_PRESS_THRESHOLD_MS){  //short click release
 
                                 }else{   //long click release
-                                    if(leftMicrophone.isListening()){
-                                        //leftMicrophone.onVoiceEnded();
+                                    if(leftMicBtn.isListening()){
+                                        //leftMicBtn.onVoiceEnded();
                                         walkieTalkieServiceCommunicator.stopRecognizingFirstLanguage();
                                     }
                                 }
                             }
                         }else{
-                            leftMicrophone.performClick();
+                            leftMicBtn.performClick();
                         }
                         lastPressedLeftMic = -1;
                         return true;
@@ -242,20 +258,30 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
                 return false;
             }
         });
-        leftMicrophone.setOnClickListenerForDeactivatedForMissingMicPermission(micMissingClickListener);
-        leftMicrophone.setOnClickListenerForDeactivated(deactivatedClickListener);
+        leftMicBtn.setOnClickListenerForDeactivatedForMissingMicPermission(micMissingClickListener);
+        leftMicBtn.setOnClickListenerForDeactivated(deactivatedClickListener);
 
-        rightMicrophone.setOnTouchListener(new View.OnTouchListener() {
+        //only support leftMicBtn/
+        rightMicBtn.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 switch(event.getAction()) {
                     case MotionEvent.ACTION_DOWN:  // PRESSED
-                        if (rightMicrophone.getActivationStatus() == DeactivableButton.ACTIVATED && rightMicrophone.getState() == ButtonMic.STATE_NORMAL) {
+
+                        //// simluate
+                        if(!rightMicBtn.isListening()){
+                            if(isAudioPathBTMode) {
+                                performButtonPressUp(leftMicBtn);
+                                switchAudioPath(false);
+                            }
+                        }
+
+                        if (rightMicBtn.getActivationStatus() == DeactivableButton.ACTIVATED && rightMicBtn.getState() == ButtonMic.STATE_NORMAL) {
                             if(isMicAutomatic) {
                                 switchMicMode(false);
                             }
-                            if(!rightMicrophone.isListening()){
-                                //rightMicrophone.onVoiceStarted();
+                            if(!rightMicBtn.isListening()){
+                                //rightMicBtn.onVoiceStarted();
                                 walkieTalkieServiceCommunicator.startRecognizingSecondLanguage();
                             }else{
                                 walkieTalkieServiceCommunicator.stopRecognizingSecondLanguage();
@@ -264,18 +290,24 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
                         }
                         return true;
                     case MotionEvent.ACTION_UP:  // RELEASED
-                        if(rightMicrophone.getActivationStatus() == DeactivableButton.ACTIVATED){
-                            if(rightMicrophone.getState() == ButtonMic.STATE_NORMAL && lastPressedRightMic != -1){
+                        if(rightMicBtn.getActivationStatus() == DeactivableButton.ACTIVATED){
+                            if(rightMicBtn.getState() == ButtonMic.STATE_NORMAL && lastPressedRightMic != -1){
                                 if(System.currentTimeMillis() - lastPressedRightMic <= LONG_PRESS_THRESHOLD_MS){  //short click release
 
                                 }else{   //long click release
-                                    if(rightMicrophone.isListening()){
+                                    if(rightMicBtn.isListening()){
                                         walkieTalkieServiceCommunicator.stopRecognizingSecondLanguage();
                                     }
                                 }
+
+                                //// simluate
+                                if(isAudioPathBTMode) {
+                                    performButtonPressDown(leftMicBtn);
+                                    switchAudioPath(true);
+                                }
                             }
                         }else{
-                            rightMicrophone.performClick();
+                            rightMicBtn.performClick();
                         }
                         lastPressedRightMic = -1;
                         return true;
@@ -283,8 +315,8 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
                 return false;
             }
         });
-        rightMicrophone.setOnClickListenerForDeactivatedForMissingMicPermission(micMissingClickListener);
-        rightMicrophone.setOnClickListenerForDeactivated(deactivatedClickListener);
+        rightMicBtn.setOnClickListenerForDeactivatedForMissingMicPermission(micMissingClickListener);
+        rightMicBtn.setOnClickListenerForDeactivated(deactivatedClickListener);
 
         exitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -373,43 +405,43 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
                     }
                 });
                 mRecyclerView.setAdapter(mAdapter);
-                // restore microphone and sound status
+                // restore micBtn and sound status
                 if(isMicAutomatic) {
-                    microphone.setMute(isMicMute, false);
-                    leftMicrophone.setMute(true, false);
-                    rightMicrophone.setMute(true, false);
+                    micBtn.setMute(isMicMute, false);
+                    leftMicBtn.setMute(true, false);
+                    rightMicBtn.setMute(true, false);
                     if(isMicActivated) {
                         if (listeningMic == VoiceTranslationService.AUTO_LANGUAGE) {
-                            microphone.onVoiceStarted(false);
+                            micBtn.onVoiceStarted(false);
                         } else {
-                            microphone.onVoiceEnded(false);
+                            micBtn.onVoiceEnded(false);
                         }
                     }else{
-                        microphone.onVoiceEnded(false);
+                        micBtn.onVoiceEnded(false);
                     }
-                    leftMicrophone.onVoiceEnded(false);
-                    rightMicrophone.onVoiceEnded(false);
+                    leftMicBtn.onVoiceEnded(false);
+                    rightMicBtn.onVoiceEnded(false);
                 }else{
                     WalkieTalkieFragment.this.isMicAutomatic = false;
-                    microphone.setMute(true, false);
-                    leftMicrophone.setMute(false, false);
-                    rightMicrophone.setMute(false, false);
+                    micBtn.setMute(true, false);
+                    leftMicBtn.setMute(false, false);
+                    rightMicBtn.setMute(false, false);
                     if(isMicActivated) {
                         if (listeningMic == VoiceTranslationService.FIRST_LANGUAGE) {
-                            leftMicrophone.onVoiceStarted(false);
+                            leftMicBtn.onVoiceStarted(false);
                         } else {
-                            leftMicrophone.onVoiceEnded(false);
+                            leftMicBtn.onVoiceEnded(false);
                         }
                         if (listeningMic == VoiceTranslationService.SECOND_LANGUAGE) {
-                            rightMicrophone.onVoiceStarted(false);
+                            rightMicBtn.onVoiceStarted(false);
                         } else {
-                            rightMicrophone.onVoiceEnded(false);
+                            rightMicBtn.onVoiceEnded(false);
                         }
                     }else{
-                        leftMicrophone.onVoiceEnded(false);
-                        rightMicrophone.onVoiceEnded(false);
+                        leftMicBtn.onVoiceEnded(false);
+                        rightMicBtn.onVoiceEnded(false);
                     }
-                    microphone.onVoiceEnded(false);
+                    micBtn.onVoiceEnded(false);
                 }
 
                 sound.setMute(isAudioMute);
@@ -418,7 +450,7 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
                 }
 
                 if(isMicActivated){
-                    if (!microphone.isMute()) {
+                    if (!micBtn.isMute()) {
                         activateInputs(true);
                     } else {
                         activateInputs(false);
@@ -434,7 +466,7 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
     @Override
     public void startMicrophone(boolean changeAspect) {
         if (changeAspect) {
-            microphone.setMute(false);
+            micBtn.setMute(false);
         }
         walkieTalkieServiceCommunicator.startMic();
     }
@@ -442,7 +474,7 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
     @Override
     public void stopMicrophone(boolean changeAspect) {
         if (changeAspect) {
-            microphone.setMute(true);
+            micBtn.setMute(true);
         }
         walkieTalkieServiceCommunicator.stopMic(changeAspect);
     }
@@ -459,9 +491,9 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
 
     @Override
     protected void deactivateInputs(int cause) {
-        microphone.deactivate(cause);
-        leftMicrophone.deactivate(cause);
-        rightMicrophone.deactivate(cause);
+        micBtn.deactivate(cause);
+        leftMicBtn.deactivate(cause);
+        rightMicBtn.deactivate(cause);
         if (cause == DeactivableButton.DEACTIVATED) {
             sound.deactivate(DeactivableButton.DEACTIVATED);
         } else {
@@ -472,9 +504,9 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
     @Override
     protected void activateInputs(boolean start) {
         Log.d("mic", "activatedInputs");
-        microphone.activate(start);
-        leftMicrophone.activate(false);
-        rightMicrophone.activate(false);
+        micBtn.activate(start);
+        leftMicBtn.activate(false);
+        rightMicBtn.activate(false);
         sound.activate(false);
     }
 
@@ -483,15 +515,34 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
             //walkieTalkieServiceCallback.onVoiceEnded();
             isMicAutomatic = automatic;
             if(!isMicAutomatic){  //we switched from automatic to manual
-                microphone.setMute(true);
-                leftMicrophone.setMute(false);
-                rightMicrophone.setMute(false);
+                micBtn.setMute(true);
+                leftMicBtn.setMute(false);
+                rightMicBtn.setMute(false);
                 walkieTalkieServiceCommunicator.startManualRecognition();
             }else{
                 walkieTalkieServiceCommunicator.stopManualRecognition();
-                microphone.setMute(false);
-                leftMicrophone.setMute(true);
-                rightMicrophone.setMute(true);
+                micBtn.setMute(false);
+                leftMicBtn.setMute(true);
+                rightMicBtn.setMute(true);
+            }
+        }
+    }
+
+
+    private void switchAudioPath(boolean bt){
+        if(isAudioPathBT != bt){
+            //walkieTalkieServiceCallback.onVoiceEnded();
+            isAudioPathBT = bt;
+            if(!isAudioPathBT){  //we switched from automatic to manual
+                //micBtn.setMute(true);
+                leftMicBtn.setMute(false); //change to bt
+                //rightMicBtn.setMute(false);
+                walkieTalkieServiceCommunicator.switchAudioPathToBT();
+            }else{
+                walkieTalkieServiceCommunicator.switchAudioPathToLocal();
+                //micBtn.setMute(false);
+                leftMicBtn.setMute(true);
+                //rightMicBtn.setMute(true);
             }
         }
     }
@@ -683,7 +734,7 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
         }
 
         // possible activation of the mic
-        if (!microphone.isMute() && microphone.getActivationStatus() == DeactivableButton.ACTIVATED) {
+        if (!micBtn.isMute() && micBtn.getActivationStatus() == DeactivableButton.ACTIVATED) {
             startMicrophone(false);
         }
     }
@@ -694,14 +745,14 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
         @Override
         public void onVoiceStarted(int mode) {
             super.onVoiceStarted(mode);
-            if(mode == VoiceTranslationService.AUTO_LANGUAGE && !microphone.isMute()) {
-                microphone.onVoiceStarted(true);
+            if(mode == VoiceTranslationService.AUTO_LANGUAGE && !micBtn.isMute()) {
+                micBtn.onVoiceStarted(true);
                 Log.e("onVoiceStart", "onVoiceStart center");
-            }else if(mode == VoiceTranslationService.FIRST_LANGUAGE && !leftMicrophone.isMute()) {
-                leftMicrophone.onVoiceStarted(true);
+            }else if(mode == VoiceTranslationService.FIRST_LANGUAGE && !leftMicBtn.isMute()) {
+                leftMicBtn.onVoiceStarted(true);
                 Log.e("onVoiceStart", "onVoiceStart left");
-            }else if(mode == VoiceTranslationService.SECOND_LANGUAGE && !rightMicrophone.isMute()) {
-                rightMicrophone.onVoiceStarted(true);
+            }else if(mode == VoiceTranslationService.SECOND_LANGUAGE && !rightMicBtn.isMute()) {
+                rightMicBtn.onVoiceStarted(true);
                 Log.e("onVoiceStart", "onVoiceStart right");
             }
         }
@@ -709,20 +760,20 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
         @Override
         public void onVoiceEnded() {
             super.onVoiceEnded();
-            microphone.onVoiceEnded(true);
-            leftMicrophone.onVoiceEnded(true);
-            rightMicrophone.onVoiceEnded(true);
+            micBtn.onVoiceEnded(true);
+            leftMicBtn.onVoiceEnded(true);
+            rightMicBtn.onVoiceEnded(true);
         }
 
         @Override
         public void onVolumeLevel(float volumeLevel) {
             super.onVolumeLevel(volumeLevel);
-            if(microphone.isListening()) {
-                microphone.updateVolumeLevel(volumeLevel);
-            }else if(leftMicrophone.isListening()){
-                leftMicrophone.updateVolumeLevel(volumeLevel);
-            }else if(rightMicrophone.isListening()){
-                rightMicrophone.updateVolumeLevel(volumeLevel);
+            if(micBtn.isListening()) {
+                micBtn.updateVolumeLevel(volumeLevel);
+            }else if(leftMicBtn.isListening()){
+                leftMicBtn.updateVolumeLevel(volumeLevel);
+            }else if(rightMicBtn.isListening()){
+                rightMicBtn.updateVolumeLevel(volumeLevel);
             }
         }
 
@@ -730,28 +781,28 @@ public class WalkieTalkieFragment extends VoiceTranslationFragment {
         public void onMicActivated() {
             super.onMicActivated();
             Log.d("mic", "onMicActivated");
-            if(!microphone.isActivated()) {
-                microphone.activate(false);
+            if(!micBtn.isActivated()) {
+                micBtn.activate(false);
             }
-            if(!leftMicrophone.isActivated()) {
-                leftMicrophone.activate(false);
+            if(!leftMicBtn.isActivated()) {
+                leftMicBtn.activate(false);
             }
-            if(!rightMicrophone.isActivated()) {
-                rightMicrophone.activate(false);
+            if(!rightMicBtn.isActivated()) {
+                rightMicBtn.activate(false);
             }
         }
 
         @Override
         public void onMicDeactivated() {
             super.onMicDeactivated();
-            if (microphone.getState() == ButtonMic.STATE_NORMAL && microphone.isActivated()) {
-                microphone.deactivate(DeactivableButton.DEACTIVATED);
+            if (micBtn.getState() == ButtonMic.STATE_NORMAL && micBtn.isActivated()) {
+                micBtn.deactivate(DeactivableButton.DEACTIVATED);
             }
-            if (leftMicrophone.getState() == ButtonMic.STATE_NORMAL && leftMicrophone.isActivated()) {
-                leftMicrophone.deactivate(DeactivableButton.DEACTIVATED);
+            if (leftMicBtn.getState() == ButtonMic.STATE_NORMAL && leftMicBtn.isActivated()) {
+                leftMicBtn.deactivate(DeactivableButton.DEACTIVATED);
             }
-            if (rightMicrophone.getState() == ButtonMic.STATE_NORMAL && rightMicrophone.isActivated()) {
-                rightMicrophone.deactivate(DeactivableButton.DEACTIVATED);
+            if (rightMicBtn.getState() == ButtonMic.STATE_NORMAL && rightMicBtn.isActivated()) {
+                rightMicBtn.deactivate(DeactivableButton.DEACTIVATED);
             }
         }
 

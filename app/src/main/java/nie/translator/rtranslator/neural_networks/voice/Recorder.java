@@ -49,6 +49,8 @@ public class Recorder {
     private final Global global;
     private boolean isRecording;
     private boolean isManualMode = false;
+    private boolean isBluetoothHeadsetConnected = false;
+    private boolean isBluetoothHeadsetUsed = false;
     public static final int[] SAMPLE_RATE_CANDIDATES = new int[]{16000};
     private static final int CHANNEL = AudioFormat.CHANNEL_IN_MONO;
     private static final int ENCODING = AudioFormat.ENCODING_PCM_FLOAT;   //original: AudioFormat.ENCODING_PCM_16BIT
@@ -107,18 +109,21 @@ public class Recorder {
         }
 
         //initialize the bluetooth headset mic management
+        this.audioManager = (AudioManager) global.getSystemService(Context.AUDIO_SERVICE);
         if(useBluetoothHeadset) {
-            this.audioManager = (AudioManager) global.getSystemService(Context.AUDIO_SERVICE);
             boolean success = setBLEHeadsetConnection();
             if(success) {
                 if (bluetoothHeadsetCallback != null) {
                     bluetoothHeadsetCallback.onScoAudioConnected();
                 }
             }
-            this.audioDeviceCallback = new AudioDeviceCallback() {
-                @Override
-                public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
-                    if(connectedBleHeadset == null) {
+        }
+        this.audioDeviceCallback = new AudioDeviceCallback() {
+            @Override
+            public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+                isBluetoothHeadsetConnected = checkHeadsetConnection();
+                if(connectedBleHeadset == null) {
+                    if(useBluetoothHeadset) {
                         boolean success = setBLEHeadsetConnection();
                         if (success) {
                             if (bluetoothHeadsetCallback != null) {
@@ -127,27 +132,29 @@ public class Recorder {
                         }
                     }
                 }
+            }
 
-                @Override
-                public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
-                    boolean found = false;
-                    for (AudioDeviceInfo removedDevice : removedDevices) {
-                        if (removedDevice.equals(connectedBleHeadset)){
-                            found = true;
-                            break;
-                        }
-                    }
-                    if(found) {
-                        connectedBleHeadset = null;
-                        audioManager.stopBluetoothSco();
-                        if (bluetoothHeadsetCallback != null) {
-                            bluetoothHeadsetCallback.onScoAudioDisconnected();
-                        }
+            @Override
+            public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+                boolean found = false;
+                isBluetoothHeadsetConnected = checkHeadsetConnection();
+                for (AudioDeviceInfo removedDevice : removedDevices) {
+                    if (removedDevice.equals(connectedBleHeadset)){
+                        found = true;
+                        break;
                     }
                 }
-            };
-            audioManager.registerAudioDeviceCallback(audioDeviceCallback, null);
-        }
+                if(found) {
+                    connectedBleHeadset = null;
+                    audioManager.stopBluetoothSco();
+                    if (bluetoothHeadsetCallback != null) {
+                        bluetoothHeadsetCallback.onScoAudioDisconnected();
+                    }
+                }
+            }
+        };
+        audioManager.registerAudioDeviceCallback(audioDeviceCallback, null);
+
     }
 
     /**
@@ -215,11 +222,9 @@ public class Recorder {
     }
 
     public void destroy(){
-        if(useBluetoothHeadset) {
-            audioManager.unregisterAudioDeviceCallback(audioDeviceCallback);
-            if(connectedBleHeadset != null){
-                audioManager.stopBluetoothSco();
-            }
+        audioManager.unregisterAudioDeviceCallback(audioDeviceCallback);
+        if(connectedBleHeadset != null){
+            audioManager.stopBluetoothSco();
         }
         if (mAudioRecord != null) {
             mAudioRecord.stop();
@@ -287,6 +292,34 @@ public class Recorder {
         }
     }
 
+    //select current audio path to bt or local mic/speaker
+    public void switchAudioPath(boolean btMode) {
+        if(useBluetoothHeadset) //not used bt forced, so can switch 
+            return;
+
+        if(!isBluetoothHeadsetConnected && btMode)
+            btMode = false; //default
+
+        if(isBluetoothHeadsetUsed != btMode) {
+            isBluetoothHeadsetUsed = btMode;
+            if(isRecording){
+                mCallback.onVoiceEnd();
+            }
+            if(btMode){
+                Log.d("mic", "bt mode activating");
+                setBLEHeadsetConnection();
+                Log.d("mic", "bt mode activated");
+            }else{
+                audioManager.stopBluetoothSco();
+                audioManager.setBluetoothScoOn(false);
+                Log.d("mic", "bt mode deactivated");
+                connectedBleHeadset = null;
+            }
+        }
+    }
+
+
+
     public void startRecording(){
         start();
     }
@@ -306,6 +339,8 @@ public class Recorder {
      * Always call the isHearing voice method and if it returns true and the time span from the last listening of the voice is greater than a tot (MAX_VALUE)
      * then call the onVoiceStarted method and then onVoice, otherwise only onVoice.
      */
+
+    //like vad, maybe use vad is better, todo...
     private class ProcessVoice implements Runnable {
         @Override
         public void run() {
@@ -526,6 +561,19 @@ public class Recorder {
         return false;
     }
 
+    private boolean checkHeadsetConnection(){
+        AudioDeviceInfo[] allDeviceInfo = audioManager.getDevices(GET_DEVICES_INPUTS);
+        for (AudioDeviceInfo device : allDeviceInfo) {
+            int deviceType = device.getType();
+            if (deviceType == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                return true;
+            }
+            if(deviceType == AudioDeviceInfo.TYPE_BLE_HEADSET || deviceType == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP){  //untested
+                return true;
+            }
+        }
+        return false;
+    }
 
     public static abstract class Callback {
         private Recorder recorder;

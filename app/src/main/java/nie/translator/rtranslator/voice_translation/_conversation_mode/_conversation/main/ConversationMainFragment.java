@@ -59,7 +59,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
     private ConstraintLayout container;
     private TextView micInput;
     private ButtonKeyboard keyboard;
-    protected ButtonMic microphone;
+    protected ButtonMic micBtn;
     private ButtonSound sound;
     private EditText editText;
     private ImageButton micPlaceHolder;
@@ -107,12 +107,12 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
         container = view.findViewById(R.id.conversation_main_container);
         micInput = view.findViewById(R.id.inputMicType);
         keyboard = view.findViewById(R.id.buttonKeyboard);
-        microphone = view.findViewById(R.id.buttonMic);
+        micBtn = view.findViewById(R.id.buttonMic);
         sound = view.findViewById(R.id.buttonSound);
         editText = view.findViewById(R.id.editText);
         micPlaceHolder = view.findViewById(R.id.buttonPlaceHolder);
-        microphone.initialize(this, view.findViewById(R.id.leftLine), view.findViewById(R.id.centerLine), view.findViewById(R.id.rightLine));
-        microphone.setEditText(editText);
+        micBtn.initialize(this, view.findViewById(R.id.leftLine), view.findViewById(R.id.centerLine), view.findViewById(R.id.rightLine));
+        micBtn.setEditText(editText);
         deactivateInputs(DeactivableButton.DEACTIVATED);
         editText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -125,14 +125,14 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
 
             @Override
             public void afterTextChanged(Editable text) {
-                if ((text == null || text.length() == 0) && microphone.getState() == ButtonMic.STATE_SEND) {
-                    microphone.setState(ButtonMic.STATE_RETURN);
-                } else if (microphone.getState() == ButtonMic.STATE_RETURN) {
-                    microphone.setState(ButtonMic.STATE_SEND);
+                if ((text == null || text.length() == 0) && micBtn.getState() == ButtonMic.STATE_SEND) {
+                    micBtn.setState(ButtonMic.STATE_RETURN);
+                } else if (micBtn.getState() == ButtonMic.STATE_RETURN) {
+                    micBtn.setState(ButtonMic.STATE_SEND);
                 }
             }
         });
-        microphone.setMicInput(micInput);
+        micBtn.setMicInput(micInput);
         description.setText(R.string.description_conversation);
         container.setVisibility(View.INVISIBLE);  //we make the UI invisible until the restore of the attributes from the service (to avoid instant changes of the UI).
     }
@@ -168,17 +168,17 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
             @Override
             public void onClick(View view) {
                 isEditTextOpen = true;
-                keyboard.generateEditText(activity, ConversationMainFragment.this, microphone, editText, micPlaceHolder, true);
+                keyboard.generateEditText(activity, ConversationMainFragment.this, micBtn, editText, micPlaceHolder, true);
                 conversationServiceCommunicator.setEditTextOpen(true);
             }
         });
 
-        microphone.setOnClickListenerForActivated(new View.OnClickListener() {
+        micBtn.setOnClickListenerForActivated(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                switch (microphone.getState()) {
+                switch (micBtn.getState()) {
                     case ButtonMic.STATE_NORMAL:
-                        if (microphone.isMute()) {
+                        if (micBtn.isMute()) {
                             startMicrophone(true);
                         } else {
                             stopMicrophone(true);
@@ -187,7 +187,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
                     case ButtonMic.STATE_RETURN:
                         isEditTextOpen = false;
                         conversationServiceCommunicator.setEditTextOpen(false);
-                        microphone.deleteEditText(activity, ConversationMainFragment.this, keyboard, editText, micPlaceHolder);
+                        micBtn.deleteEditText(activity, ConversationMainFragment.this, keyboard, editText, micPlaceHolder);
                         break;
                     case ButtonMic.STATE_SEND:
                         // sending the message to be translated to the service
@@ -203,25 +203,25 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
                 }
             }
         });
-        microphone.setOnClickListenerForDeactivatedForMissingMicPermission(new View.OnClickListener() {
+        micBtn.setOnClickListenerForDeactivatedForMissingMicPermission(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (microphone.getState() == ButtonMic.STATE_RETURN) {
+                if (micBtn.getState() == ButtonMic.STATE_RETURN) {
                     isEditTextOpen = false;
                     conversationServiceCommunicator.setEditTextOpen(false);
-                    microphone.deleteEditText(activity, ConversationMainFragment.this, keyboard, editText, micPlaceHolder);
+                    micBtn.deleteEditText(activity, ConversationMainFragment.this, keyboard, editText, micPlaceHolder);
                 } else {
                     Toast.makeText(activity, R.string.error_missing_mic_permissions, Toast.LENGTH_SHORT).show();
                 }
             }
         });
-        microphone.setOnClickListenerForDeactivated(new View.OnClickListener() {
+        micBtn.setOnClickListenerForDeactivated(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (microphone.getState() == ButtonMic.STATE_RETURN) {
+                if (micBtn.getState() == ButtonMic.STATE_RETURN) {
                     isEditTextOpen = false;
                     conversationServiceCommunicator.setEditTextOpen(false);
-                    microphone.deleteEditText(activity, ConversationMainFragment.this, keyboard, editText, micPlaceHolder);
+                    micBtn.deleteEditText(activity, ConversationMainFragment.this, keyboard, editText, micPlaceHolder);
                 } else {
                     deactivatedClickListener.onClick(v);
                 }
@@ -236,7 +236,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
             //si riapre l' editText se era aperto al momento della distuzione dell' activity per motivi di sistema (es. rotazione o multi-windows)
             isEditTextOpen=savedInstanceState.getBoolean("isEditTextOpen");
             if(isEditTextOpen){
-                keyboard.generateEditText(activity,microphone,editText,false);
+                keyboard.generateEditText(activity,micBtn,editText,false);
             }
         }
     }*/
@@ -292,16 +292,16 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
                     }
                 });
                 mRecyclerView.setAdapter(mAdapter);
-                // restore microphone and sound status
-                microphone.setMute(isMicMute, false);
+                // restore micBtn and sound status
+                micBtn.setMute(isMicMute, false);
                 if(isMicActivated) {
                     if (listeningMic == VoiceTranslationService.AUTO_LANGUAGE) {
-                        microphone.onVoiceStarted(false);
+                        micBtn.onVoiceStarted(false);
                     } else {
-                        microphone.onVoiceEnded(false);
+                        micBtn.onVoiceEnded(false);
                     }
                 }else{
-                    microphone.onVoiceEnded(false);
+                    micBtn.onVoiceEnded(false);
                 }
                 sound.setMute(isAudioMute);
                 if(isTTSError){
@@ -310,7 +310,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
                 // restore editText
                 ConversationMainFragment.this.isEditTextOpen = isEditTextOpen;
                 if (isEditTextOpen) {
-                    keyboard.generateEditText(activity, ConversationMainFragment.this, microphone, editText, micPlaceHolder, false);
+                    keyboard.generateEditText(activity, ConversationMainFragment.this, micBtn, editText, micPlaceHolder, false);
                 }
                 if (isBluetoothHeadsetConnected) {
                     conversationServiceCallback.onBluetoothHeadsetConnected();
@@ -319,7 +319,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
                 }
 
                 if(isMicActivated){
-                    if (!microphone.isMute() && !isEditTextOpen) {
+                    if (!micBtn.isMute() && !isEditTextOpen) {
                         activateInputs(true);
                     } else {
                         activateInputs(false);
@@ -334,7 +334,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
     @Override
     public void startMicrophone(boolean changeAspect) {
         if (changeAspect) {
-            microphone.setMute(false);
+            micBtn.setMute(false);
         }
         conversationServiceCommunicator.startMic();
     }
@@ -342,7 +342,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
     @Override
     public void stopMicrophone(boolean changeAspect) {
         if (changeAspect) {
-            microphone.setMute(true);
+            micBtn.setMute(true);
         }
         conversationServiceCommunicator.stopMic(changeAspect);
     }
@@ -359,7 +359,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
 
     @Override
     protected void deactivateInputs(int cause) {
-        microphone.deactivate(cause);
+        micBtn.deactivate(cause);
         if (cause == DeactivableButton.DEACTIVATED) {
             sound.deactivate(DeactivableButton.DEACTIVATED);
         } else {
@@ -369,7 +369,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
 
     @Override
     protected void activateInputs(boolean start) {
-        microphone.activate(start);
+        micBtn.activate(start);
         sound.activate(start);
     }
 
@@ -380,7 +380,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
     public void deleteEditText() {
         isEditTextOpen = false;
         conversationServiceCommunicator.setEditTextOpen(false);
-        microphone.deleteEditText(activity, this, keyboard, editText, micPlaceHolder);
+        micBtn.deleteEditText(activity, this, keyboard, editText, micPlaceHolder);
     }
 
     public boolean isInputActive() {
@@ -412,7 +412,7 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
         }
 
         // possible activation of the mic
-        if (!microphone.isMute() && microphone.getActivationStatus() == DeactivableButton.ACTIVATED) {
+        if (!micBtn.isMute() && micBtn.getActivationStatus() == DeactivableButton.ACTIVATED) {
             startMicrophone(false);
         }
     }
@@ -436,38 +436,38 @@ public class ConversationMainFragment extends VoiceTranslationFragment {
         @Override
         public void onVoiceStarted(int mode) {
             super.onVoiceStarted(mode);
-            if(!microphone.isMute()) {
-                microphone.onVoiceStarted(true);
+            if(!micBtn.isMute()) {
+                micBtn.onVoiceStarted(true);
             }
         }
 
         @Override
         public void onVoiceEnded() {
             super.onVoiceEnded();
-            microphone.onVoiceEnded(true);
+            micBtn.onVoiceEnded(true);
         }
 
         @Override
         public void onVolumeLevel(float volumeLevel) {
             super.onVolumeLevel(volumeLevel);
-            if(microphone.isListening()) {
-                microphone.updateVolumeLevel(volumeLevel);
+            if(micBtn.isListening()) {
+                micBtn.updateVolumeLevel(volumeLevel);
             }
         }
 
         @Override
         public void onMicActivated() {
             super.onMicActivated();
-            if(!microphone.isActivated()) {
-                microphone.activate(false);
+            if(!micBtn.isActivated()) {
+                micBtn.activate(false);
             }
         }
 
         @Override
         public void onMicDeactivated() {
             super.onMicDeactivated();
-            if(microphone.getState() == ButtonMic.STATE_NORMAL && microphone.isActivated()) {
-                microphone.deactivate(DeactivableButton.DEACTIVATED);
+            if(micBtn.getState() == ButtonMic.STATE_NORMAL && micBtn.isActivated()) {
+                micBtn.deactivate(DeactivableButton.DEACTIVATED);
             }
         }
 

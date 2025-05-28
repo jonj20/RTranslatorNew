@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package nie.translator.rtranslator.voice_translation._walkie_talkie_mode;
+package nie.translator.rtranslator.voice_translation._streaming_mode;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -41,7 +41,7 @@ import nie.translator.rtranslator.neural_networks.voice.RecognizerMultiListener;
 import nie.translator.rtranslator.neural_networks.voice.Recorder;
 
 
-public class WalkieTalkieService extends VoiceTranslationService {
+public class StreamTranslationService extends VoiceTranslationService {
     //properties
     public static final int SPEECH_BEAM_SIZE = 1;
     public static final int TRANSLATOR_BEAM_SIZE = 1;
@@ -55,12 +55,8 @@ public class WalkieTalkieService extends VoiceTranslationService {
     public static final int STOP_MANUAL_RECOGNITION = 27;
     public static final int START_RECOGNIZING_FIRST_LANGUAGE = 28;
     public static final int STOP_RECOGNIZING_FIRST_LANGUAGE = 29;
-    public static final int START_RECOGNIZING_SECOND_LANGUAGE = 30;
-    public static final int STOP_RECOGNIZING_SECOND_LANGUAGE = 31;
-    public static final int START_RECOGNIZING_AUTO_LANGUAGE = 32;
-    public static final int STOP_RECOGNIZING_AUTO_LANGUAGE = 33;
-    public static final int SWITCH_AUDIO_PATH_TO_BT = 34;
-    public static final int SWITCH_AUDIO_PATH_TO_LOCAL = 35;
+
+
 
     // callbacks
     public static final int ON_FIRST_LANGUAGE = 22;
@@ -87,7 +83,7 @@ public class WalkieTalkieService extends VoiceTranslationService {
             public boolean handleMessage(@NonNull android.os.Message message) {
                 int command = message.getData().getInt("command", -1);
                 if (command != -1) {
-                    if (!WalkieTalkieService.super.executeCommand(command, message.getData())) {
+                    if (!StreamTranslationService.super.executeCommand(command, message.getData())) {
                         switch (command) {
                             case CHANGE_FIRST_LANGUAGE:
                                 CustomLocale newFirstLanguage = (CustomLocale) message.getData().getSerializable("language");
@@ -105,13 +101,13 @@ public class WalkieTalkieService extends VoiceTranslationService {
                                 Bundle bundle = new Bundle();
                                 bundle.putInt("callback", ON_FIRST_LANGUAGE);
                                 bundle.putSerializable("language", firstLanguage);
-                                WalkieTalkieService.super.notifyToClient(bundle);
+                                StreamTranslationService.super.notifyToClient(bundle);
                                 break;
                             case GET_SECOND_LANGUAGE:
                                 Bundle bundle2 = new Bundle();
                                 bundle2.putInt("callback", ON_SECOND_LANGUAGE);
                                 bundle2.putSerializable("language", secondLanguage);
-                                WalkieTalkieService.super.notifyToClient(bundle2);
+                                StreamTranslationService.super.notifyToClient(bundle2);
                                 break;
                             case RECEIVE_TEXT:
                                 String text = message.getData().getString("text", null);
@@ -132,22 +128,14 @@ public class WalkieTalkieService extends VoiceTranslationService {
 
                                         @Override
                                         public void onFailure(int[] reasons, long value) {
-                                            WalkieTalkieService.super.notifyError(reasons,value);
+                                            StreamTranslationService.super.notifyError(reasons,value);
                                         }
                                     });
                                 }
                                 break;
 
-                            case SWITCH_AUDIO_PATH_TO_BT:
-                                if(mVoiceRecorder != null) {
-                                    mVoiceRecorder.switchAudioPath(true);
-                                }
-                                break;
-                            case SWITCH_AUDIO_PATH_TO_LOCAL:
-                                if(mVoiceRecorder != null) {
-                                    mVoiceRecorder.switchAudioPath(false);
-                                }
-                                break;
+ 
+ 
 
                             case START_MANUAL_RECOGNITION:
                                 isMicAutomatic = false;
@@ -184,34 +172,8 @@ public class WalkieTalkieService extends VoiceTranslationService {
                                 }
                                 Log.d("voice", "stopped manual listening left");
                                 break;
-                            case START_RECOGNIZING_SECOND_LANGUAGE:
-                                if(!manualRecognizingFirstLanguage && !isMicAutomatic) {
-                                    manualRecognizingSecondLanguage = true;
-                                    if(mVoiceRecorder != null) {
-                                        mVoiceRecorder.startRecording();
-                                    }
-                                    Log.d("voice", "started manual listening right");
-                                }
-                                break;
-                            case STOP_RECOGNIZING_SECOND_LANGUAGE:
-                                if(mVoiceRecorder != null) {
-                                    mVoiceRecorder.stopRecording();
-                                }
-                                Log.d("voice", "stopped manual listening right");
-                                break;
-                            case START_RECOGNIZING_AUTO_LANGUAGE:
-                                if(!manualRecognizingAutoLanguage && !isMicAutomatic) {
-                                    manualRecognizingAutoLanguage = true;
-                                    if(mVoiceRecorder != null) {
-                                        mVoiceRecorder.startRecording();
-                                    }
-                                }
-                                break;
-                            case STOP_RECOGNIZING_AUTO_LANGUAGE:
-                                if(mVoiceRecorder != null) {
-                                    mVoiceRecorder.stopRecording();
-                                }
-                                break;
+
+
                         }
                     }
                 }
@@ -223,7 +185,7 @@ public class WalkieTalkieService extends VoiceTranslationService {
             public void onVoiceStart() {
                 super.onVoiceStart();
                 // we notify the client
-                WalkieTalkieService.super.notifyVoiceStart();
+                StreamTranslationService.super.notifyVoiceStart();
             }
 
             @Override
@@ -257,14 +219,14 @@ public class WalkieTalkieService extends VoiceTranslationService {
             public void onVoiceEnd() {
                 super.onVoiceEnd();
                 // we notify the client
-                WalkieTalkieService.super.notifyVoiceEnd();
+                StreamTranslationService.super.notifyVoiceEnd();
             }
 
             @Override
             public void onVolumeLevel(float volumeLevel) {
                 super.onVolumeLevel(volumeLevel);
                 // we notify the client
-                WalkieTalkieService.super.notifyVolumeLevel(volumeLevel);
+                StreamTranslationService.super.notifyVolumeLevel(volumeLevel);
             }
         };
         speechRecognizerCallback = new RecognizerMultiListener() {
@@ -312,10 +274,10 @@ public class WalkieTalkieService extends VoiceTranslationService {
                         if(isFinal && CustomLocale.containsLanguage(ttsLanguages, languageOfText)) { // check if the text can be speak
                             speak(text, languageOfText);
                         }
-                        GuiMessage message = new GuiMessage(new Message(WalkieTalkieService.this, text), resultID, true, isFinal);
-                        WalkieTalkieService.super.notifyMessage(message);
+                        GuiMessage message = new GuiMessage(new Message(StreamTranslationService.this, text), resultID, true, isFinal);
+                        StreamTranslationService.super.notifyMessage(message);
                         // we save every new message in the exchanged messages so that the fragment can restore them
-                        WalkieTalkieService.super.addOrUpdateMessage(message);
+                        StreamTranslationService.super.addOrUpdateMessage(message);
                         //if the tts is not active we restart the mic here
                         if(isFinal && (tts == null || !CustomLocale.containsLanguage(ttsLanguages, languageOfText) || !tts.isActive() || isAudioMute)){
                             startVoiceRecorder();
@@ -325,10 +287,10 @@ public class WalkieTalkieService extends VoiceTranslationService {
 
                     @Override
                     public void onFailure(int[] reasons, long value) {
-                        GuiMessage message = new GuiMessage(new Message(WalkieTalkieService.this, text), resultID, true, isFinal);
-                        WalkieTalkieService.super.notifyMessage(message);
+                        GuiMessage message = new GuiMessage(new Message(StreamTranslationService.this, text), resultID, true, isFinal);
+                        StreamTranslationService.super.notifyMessage(message);
                         // we save every new message in the exchanged messages so that the fragment can restore them
-                        WalkieTalkieService.super.addOrUpdateMessage(message);
+                        StreamTranslationService.super.addOrUpdateMessage(message);
                         //we restart the mic here
                         startVoiceRecorder();
                         notifyMicActivated();
@@ -338,7 +300,7 @@ public class WalkieTalkieService extends VoiceTranslationService {
 
             @Override
             public void onFailure(int[] reasons, long value) {
-                WalkieTalkieService.super.notifyError(reasons,value);
+                StreamTranslationService.super.notifyError(reasons,value);
                 //if the tts is not active we restart the mic here
                 if(tts == null || !tts.isActive() || isAudioMute){
                     startVoiceRecorder();
@@ -355,10 +317,10 @@ public class WalkieTalkieService extends VoiceTranslationService {
                         if(isFinal && CustomLocale.containsLanguage(ttsLanguages, languageOfText)) { // check if the text can be speak
                             speak(text, languageOfText);
                         }
-                        GuiMessage message = new GuiMessage(new Message(WalkieTalkieService.this, text), resultID, false, isFinal);
-                        WalkieTalkieService.super.notifyMessage(message);
+                        GuiMessage message = new GuiMessage(new Message(StreamTranslationService.this, text), resultID, false, isFinal);
+                        StreamTranslationService.super.notifyMessage(message);
                         // we save every new message in the exchanged messages so that the fragment can restore them
-                        WalkieTalkieService.super.addOrUpdateMessage(message);
+                        StreamTranslationService.super.addOrUpdateMessage(message);
                         //if the tts is not active we restart the mic here
                         if(isFinal && (tts == null || !CustomLocale.containsLanguage(ttsLanguages, languageOfText) || !tts.isActive() || isAudioMute)){
                             startVoiceRecorder();
@@ -368,10 +330,10 @@ public class WalkieTalkieService extends VoiceTranslationService {
 
                     @Override
                     public void onFailure(int[] reasons, long value) {
-                        GuiMessage message = new GuiMessage(new Message(WalkieTalkieService.this, text), resultID, false, isFinal);
-                        WalkieTalkieService.super.notifyMessage(message);
+                        GuiMessage message = new GuiMessage(new Message(StreamTranslationService.this, text), resultID, false, isFinal);
+                        StreamTranslationService.super.notifyMessage(message);
                         // we save every new message in the exchanged messages so that the fragment can restore them
-                        WalkieTalkieService.super.addOrUpdateMessage(message);
+                        StreamTranslationService.super.addOrUpdateMessage(message);
                         //we restart the mic here
                         startVoiceRecorder();
                         notifyMicActivated();
@@ -381,7 +343,7 @@ public class WalkieTalkieService extends VoiceTranslationService {
 
             @Override
             public void onFailure(int[] reasons, long value) {
-                WalkieTalkieService.super.notifyError(reasons,value);
+                StreamTranslationService.super.notifyError(reasons,value);
                 //if the tts is not active we restart the mic here
                 if(tts == null || !tts.isActive() || isAudioMute){
                     startVoiceRecorder();
@@ -485,11 +447,11 @@ public class WalkieTalkieService extends VoiceTranslationService {
         }
     }
 
-    public static class WalkieTalkieServiceCommunicator extends VoiceTranslationServiceCommunicator {
+    public static class StreamTranslationServiceCommunicator extends VoiceTranslationServiceCommunicator {
         private ArrayList<LanguageListener> firstLanguageListeners = new ArrayList<>();
         private ArrayList<LanguageListener> secondLanguageListeners = new ArrayList<>();
 
-        public WalkieTalkieServiceCommunicator(int id) {
+        public StreamTranslationServiceCommunicator(int id) {
             super(id);
             super.serviceHandler = new Handler(new Handler.Callback() {
                 @Override
@@ -540,14 +502,14 @@ public class WalkieTalkieService extends VoiceTranslationService {
 
         public void changeFirstLanguage(CustomLocale language) {
             Bundle bundle = new Bundle();
-            bundle.putInt("command", WalkieTalkieService.CHANGE_FIRST_LANGUAGE);
+            bundle.putInt("command", StreamTranslationService.CHANGE_FIRST_LANGUAGE);
             bundle.putSerializable("language", language);
             super.sendToService(bundle);
         }
 
         public void changeSecondLanguage(CustomLocale language) {
             Bundle bundle = new Bundle();
-            bundle.putInt("command", WalkieTalkieService.CHANGE_SECOND_LANGUAGE);
+            bundle.putInt("command", StreamTranslationService.CHANGE_SECOND_LANGUAGE);
             bundle.putSerializable("language", language);
             super.sendToService(bundle);
         }
@@ -576,41 +538,10 @@ public class WalkieTalkieService extends VoiceTranslationService {
             super.sendToService(bundle);
         }
 
-        public void startRecognizingSecondLanguage() {
-            Bundle bundle = new Bundle();
-            bundle.putInt("command", START_RECOGNIZING_SECOND_LANGUAGE);
-            super.sendToService(bundle);
-        }
 
-        public void stopRecognizingSecondLanguage() {
-            Bundle bundle = new Bundle();
-            bundle.putInt("command", STOP_RECOGNIZING_SECOND_LANGUAGE);
-            super.sendToService(bundle);
-        }
 
-        public void startRecognizingAutoLanguage() {
-            Bundle bundle = new Bundle();
-            bundle.putInt("command", START_RECOGNIZING_AUTO_LANGUAGE);
-            super.sendToService(bundle);
-        }
 
-        public void stopRecognizingAutoLanguage() {
-            Bundle bundle = new Bundle();
-            bundle.putInt("command", STOP_RECOGNIZING_AUTO_LANGUAGE);
-            super.sendToService(bundle);
-        }
 
-        public void switchAudioPathToBT() {
-            Bundle bundle = new Bundle();
-            bundle.putInt("command", SWITCH_AUDIO_PATH_TO_BT);
-            super.sendToService(bundle);
-        }
-
-        public void switchAudioPathToLocal() {
-            Bundle bundle = new Bundle();
-            bundle.putInt("command", SWITCH_AUDIO_PATH_TO_LOCAL);
-            super.sendToService(bundle);
-        }
 
     }
 

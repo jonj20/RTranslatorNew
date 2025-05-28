@@ -10,7 +10,9 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Build;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.text.Editable;
@@ -30,6 +32,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Toolbar;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -53,13 +56,21 @@ import nie.translator.rtranslator.utils.CustomLocale;
 import nie.translator.rtranslator.utils.ErrorCodes;
 import nie.translator.rtranslator.utils.Tools;
 import nie.translator.rtranslator.utils.gui.AnimatedTextView;
+import nie.translator.rtranslator.utils.gui.ButtonMic;
+import nie.translator.rtranslator.utils.gui.ButtonSound;
+import nie.translator.rtranslator.utils.gui.DeactivableButton;
 import nie.translator.rtranslator.utils.gui.GuiTools;
 import nie.translator.rtranslator.utils.gui.LanguageListAdapter;
 import nie.translator.rtranslator.utils.gui.animations.CustomAnimator;
 import nie.translator.rtranslator.utils.gui.messages.GuiMessage;
+import nie.translator.rtranslator.utils.gui.messages.MessagesAdapter;
+import nie.translator.rtranslator.utils.services_communication.ServiceCommunicator;
+import nie.translator.rtranslator.utils.services_communication.ServiceCommunicatorListener;
+import nie.translator.rtranslator.voice_translation.VoiceTranslationFragment;
+import nie.translator.rtranslator.voice_translation.VoiceTranslationService;
 import nie.translator.rtranslator.voice_translation.VoiceTranslationActivity;
 
-public class StreamTranslationFragment extends Fragment {
+public class StreamTranslationFragment extends VoiceTranslationFragment {
     public static final int DEFAULT_BEAM_SIZE = 1;
     public static final int MAX_BEAM_SIZE = 6;
     private VoiceTranslationActivity activity;
@@ -72,6 +83,7 @@ public class StreamTranslationFragment extends Fragment {
 
     //TranslatorFragment's GUI
     private MaterialButton translateButton;
+    private ButtonMic leftMicBtn;
     private FloatingActionButton walkieTalkieButton;
     private FloatingActionButton conversationButton;
     private FloatingActionButton walkieTalkieButtonSmall;
@@ -87,6 +99,7 @@ public class StreamTranslationFragment extends Fragment {
     private ConstraintLayout toolbarContainer;
     private TextView title;
     private AppCompatImageButton settingsButton;
+    private ButtonSound sound;
     private AppCompatImageButton settingsButtonReduced;
     private AppCompatImageButton backButton;
     private FloatingActionButton copyInputButton;
@@ -107,12 +120,19 @@ public class StreamTranslationFragment extends Fragment {
     ViewTreeObserver.OnGlobalLayoutListener layoutListener;
     private static final int REDUCED_GUI_THRESHOLD_DP = 550;
 
+
+    //connection
+    protected StreamTranslationService.StreamTranslationServiceCommunicator streamTranslationServiceCommunicator;
+    protected VoiceTranslationService.VoiceTranslationServiceCallback streamTranslationServiceCallback;
+
+
     //languageListDialog
     private LanguageListAdapter listView;
     private ListView listViewGui;
     private ProgressBar progressBar;
     private ImageButton reloadButton;
     private AlertDialog dialog;
+    private Handler mHandler = new Handler();
 
     //animations
     private int textActionButtonHeight;
@@ -134,12 +154,14 @@ public class StreamTranslationFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        streamTranslationServiceCommunicator = new StreamTranslationService.StreamTranslationServiceCommunicator(0);
+        streamTranslationServiceCallback = new StreamTranslationServiceCallback();
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_translation, container, false);
+        return inflater.inflate(R.layout.fragment_stream_translation, container, false);
     }
 
     @Override
@@ -149,6 +171,8 @@ public class StreamTranslationFragment extends Fragment {
         secondLanguageSelector = view.findViewById(R.id.secondLanguageSelectorContainer);
         invertLanguagesButton = view.findViewById(R.id.invertLanguages);
         translateButton = view.findViewById(R.id.buttonTranslate);
+        sound = view.findViewById(R.id.soundButton);
+        leftMicBtn = view.findViewById(R.id.buttonMicLeft);
         walkieTalkieButton = view.findViewById(R.id.buttonMicLeft);
         conversationButton = view.findViewById(R.id.buttonMicRight);
         walkieTalkieButtonSmall = view.findViewById(R.id.buttonWalkieTalkieSmall);
@@ -345,6 +369,23 @@ public class StreamTranslationFragment extends Fragment {
 
     public void onStart() {
         super.onStart();
+        if (getArguments() != null) {
+            if (getArguments().getBoolean("firstStart", false)) {
+                getArguments().remove("firstStart");
+                mHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        connectToService();
+                    }
+                }, 300);
+            } else {
+                connectToService();
+            }
+        } else {
+            connectToService();
+        }
+
+
         GuiMessage lastInputText = global.getTranslator().getLastInputText();
         GuiMessage lastOutputText = global.getTranslator().getLastOutputText();
 
@@ -808,6 +849,168 @@ public class StreamTranslationFragment extends Fragment {
         }
     }
 
+
+ 
+
+
+    @Override
+    protected void connectToService() {
+        activity.connectToStreamTranslationService(streamTranslationServiceCallback, new ServiceCommunicatorListener() {
+            @Override
+            public void onServiceCommunicator(ServiceCommunicator serviceCommunicator) {
+                streamTranslationServiceCommunicator = (StreamTranslationService.StreamTranslationServiceCommunicator) serviceCommunicator;
+                restoreAttributesFromService();
+                // listener setting for the two language selectors
+                firstLanguageSelector.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        showLanguageListDialog(1);
+                    }
+                });
+                secondLanguageSelector.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        showLanguageListDialog(2);
+                    }
+                });
+
+                // setting of the selected languages
+                streamTranslationServiceCommunicator.getFirstLanguage(new StreamTranslationService.LanguageListener() {
+                    @Override
+                    public void onLanguage(CustomLocale language) {
+                        setFirstLanguage(language);
+                    }
+                });
+                streamTranslationServiceCommunicator.getSecondLanguage(new StreamTranslationService.LanguageListener() {
+                    @Override
+                    public void onLanguage(CustomLocale language) {
+                        setSecondLanguage(language);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(int[] reasons, long value) {
+                StreamTranslationFragment.super.onFailureConnectingWithService(reasons, value);
+            }
+        });
+    }
+
+
+
+
+
+    @Override
+    public void restoreAttributesFromService() {
+        streamTranslationServiceCommunicator.getAttributes(new VoiceTranslationService.AttributesListener() {
+            @Override
+            public void onSuccess(ArrayList<GuiMessage> messages, boolean isMicMute, boolean isAudioMute, boolean isTTSError, final boolean isEditTextOpen, boolean isBluetoothHeadsetConnected, boolean isMicAutomatic, boolean isMicActivated, int listeningMic) {
+                // initialization with service values
+                //container.setVisibility(View.VISIBLE);
+                mAdapter = new MessagesAdapter(messages, new MessagesAdapter.Callback() {
+                    @Override
+                    public void onFirstItemAdded() {
+                  ///      description.setVisibility(View.GONE);
+                        //mRecyclerView.setVisibility(View.VISIBLE);
+                    }
+                });
+                //mRecyclerView.setAdapter(mAdapter);
+            
+                if(isMicAutomatic) {
+
+                    leftMicBtn.setMute(true, false);
+     
+               
+                    leftMicBtn.onVoiceEnded(false);
+                
+                }else{
+                    //StreamTranslationFragment.this.isMicAutomatic = false;
+        
+                    leftMicBtn.setMute(false, false);
+           
+                    if(isMicActivated) {
+                        if (listeningMic == VoiceTranslationService.FIRST_LANGUAGE) {
+                            leftMicBtn.onVoiceStarted(false);
+                        } else {
+                            leftMicBtn.onVoiceEnded(false);
+                        }
+      
+                    }else{
+                        leftMicBtn.onVoiceEnded(false);
+            
+                    }
+       
+                }
+
+                sound.setMute(isAudioMute);
+                if(isTTSError){
+                    sound.deactivate(DeactivableButton.DEACTIVATED_FOR_TTS_ERROR);
+                }
+
+                if(isMicActivated){
+                   
+                        activateInputs(true); //check
+                 
+                      //  activateInputs(false);
+                  
+                }else{
+                    deactivateInputs(DeactivableButton.DEACTIVATED);
+                }
+            }
+        });
+    }
+
+
+    @Override
+    public void startMicrophone(boolean changeAspect) {
+        if (changeAspect) {
+        
+        }
+        streamTranslationServiceCommunicator.startMic();
+    }
+
+    @Override
+    public void stopMicrophone(boolean changeAspect) {
+        if (changeAspect) {
+        
+        }
+        streamTranslationServiceCommunicator.stopMic(changeAspect);
+    }
+
+    protected void startSound() {
+        sound.setMute(false);
+        streamTranslationServiceCommunicator.startSound();
+    }
+
+    protected void stopSound() {
+        sound.setMute(true);
+        streamTranslationServiceCommunicator.stopSound();
+    }
+
+    @Override
+    protected void deactivateInputs(int cause) {
+    
+        leftMicBtn.deactivate(cause);
+ 
+        if (cause == DeactivableButton.DEACTIVATED) {
+            sound.deactivate(DeactivableButton.DEACTIVATED);
+        } else {
+            sound.activate(false);  // to activate the button sound which otherwise remains deactivated and when clicked it shows the message "wait for initialisation"
+        }
+    }
+
+    @Override
+    protected void activateInputs(boolean start) {
+        Log.d("mic", "activatedInputs");
+      
+        leftMicBtn.activate(false);
+
+        sound.activate(false);
+    }
+
+
+
+
     private void showLanguageListDialog(final int languageNumber) {
         //when the dialog is shown at the beginning the loading is shown, then once the list of languages​is obtained (within the showList)
         //the loading is replaced with the list of languages
@@ -912,6 +1115,7 @@ public class StreamTranslationFragment extends Fragment {
         if(getView() != null) {
             getView().getViewTreeObserver().removeOnGlobalLayoutListener(layoutListener);
         }
+        mHandler.removeCallbacksAndMessages(null);
         firstLanguageSelector.setOnClickListener(null);
         secondLanguageSelector.setOnClickListener(null);
         invertLanguagesButton.setOnClickListener(null);
@@ -921,20 +1125,48 @@ public class StreamTranslationFragment extends Fragment {
         outputText.clearFocus();
         //we detach the translate listener
         global.getTranslator().removeCallback(translateListener);
+		
+        activity.disconnectFromStreamTranslationService(streamTranslationServiceCommunicator);
     }
 
     private void setFirstLanguage(CustomLocale language) {
+        // new language setting in the StreamTranslationService
+        streamTranslationServiceCommunicator.changeFirstLanguage(language);
         // save firstLanguage selected
         global.setFirstTextLanguage(language);
         // change language displayed
-        ((AnimatedTextView) firstLanguageSelector.findViewById(R.id.firstLanguageName)).setText(language.getDisplayNameWithoutTTS(), false);
+        global.getTTSLanguages(true, new Global.GetLocalesListListener() {
+            @Override
+            public void onSuccess(ArrayList<CustomLocale> ttsLanguages) {
+                ((AnimatedTextView) firstLanguageSelector.findViewById(R.id.firstLanguageName)).setText(language.getDisplayNameWithoutTTS(), true);
+                //leftMicLanguage.setText(language.getDisplayNameWithoutTTS(), true); //
+            }
+
+            @Override
+            public void onFailure(int[] reasons, long value) {
+                //never called in this case
+            }
+        });
     }
 
     private void setSecondLanguage(CustomLocale language) {
+        // new language setting in the StreamTranslationService
+        streamTranslationServiceCommunicator.changeSecondLanguage(language);
         // save secondLanguage selected
-        global.setSecondTextLanguage(language);
+        global.setSecondLanguage(language);
         // change language displayed
-        ((AnimatedTextView) secondLanguageSelector.findViewById(R.id.secondLanguageName)).setText(language.getDisplayNameWithoutTTS(), false);
+        global.getTTSLanguages(true, new Global.GetLocalesListListener() {
+            @Override
+            public void onSuccess(ArrayList<CustomLocale> ttsLanguages) {
+                ((AnimatedTextView) secondLanguageSelector.findViewById(R.id.secondLanguageName)).setText(language.getDisplayNameWithoutTTS(), true);
+                ///rightMicLanguage.setText(language.getDisplayNameWithoutTTS(), true); //TODO 
+            }
+
+            @Override
+            public void onFailure(int[] reasons, long value) {
+                //never called in this case
+            }
+        });
     }
 
     private void onFailureShowingList(int[] reasons, long value) {
@@ -977,4 +1209,142 @@ public class StreamTranslationFragment extends Fragment {
     public int getActionButtonBottomMargin() {
         return actionButtonBottomMargin;
     }
+	
+	
+    /**
+     * Handles user acceptance (or denial) of our permission request.
+     */
+    @CallSuper
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode != VoiceTranslationService.REQUEST_CODE_REQUIRED_PERMISSIONS) {
+            return;
+        }
+
+        for (int grantResult : grantResults) {
+            if (grantResult == PackageManager.PERMISSION_DENIED) {
+                Toast.makeText(activity, R.string.error_missing_mic_permissions, Toast.LENGTH_LONG).show();
+                deactivateInputs(DeactivableButton.DEACTIVATED_FOR_MISSING_MIC_PERMISSION);
+                return;
+            }
+        }
+
+        // possible activation of the mic
+            startMicrophone(false);   //TODO //check need
+
+    }
+
+
+
+    public class StreamTranslationServiceCallback extends VoiceTranslationService.VoiceTranslationServiceCallback {
+        @Override
+        public void onVoiceStarted(int mode) {
+            super.onVoiceStarted(mode);
+
+            //voice
+            if(mode == VoiceTranslationService.FIRST_LANGUAGE && !leftMicBtn.isMute()) {
+                leftMicBtn.onVoiceStarted(true);
+                Log.e("onVoiceStart", "onVoiceStart left");
+            }
+
+        }
+
+        @Override
+        public void onVoiceEnded() {
+            super.onVoiceEnded();
+
+            leftMicBtn.onVoiceEnded(true);
+
+        }
+
+        @Override
+        public void onVolumeLevel(float volumeLevel) {
+            super.onVolumeLevel(volumeLevel);
+            
+            if(leftMicBtn.isListening()){
+                leftMicBtn.updateVolumeLevel(volumeLevel);
+            }
+        }
+
+        @Override
+        public void onMicActivated() {
+            super.onMicActivated();
+            Log.d("mic", "onMicActivated");
+
+            if(!leftMicBtn.isActivated()) {
+                leftMicBtn.activate(false);
+            }
+        }
+
+        @Override
+        public void onMicDeactivated() {
+            super.onMicDeactivated();
+
+            if (leftMicBtn.getState() == ButtonMic.STATE_NORMAL && leftMicBtn.isActivated()) {
+                leftMicBtn.deactivate(DeactivableButton.DEACTIVATED);
+            }
+        }
+
+        @Override
+        public void onMessage(GuiMessage message) {
+            super.onMessage(message);
+            if (message != null) {
+                int messageIndex = mAdapter.getMessageIndex(message.getMessageID());
+                if(messageIndex != -1) {
+                    //TODO
+                    // if((!mRecyclerView.isAnimating() && !mRecyclerView.getLayoutManager().isSmoothScrolling()) || message.isFinal()) {
+                    //     if(message.isFinal()){
+                    //         if(mRecyclerView.getItemAnimator() != null) {
+                    //             mRecyclerView.getItemAnimator().endAnimations();
+                    //         }
+                    //     }
+                    //     mAdapter.setMessage(messageIndex, message);
+                    // }
+                }else{
+                    // if(mRecyclerView.getItemAnimator() != null) {
+                    //     mRecyclerView.getItemAnimator().endAnimations();
+                    // }
+                    // mAdapter.addMessage(message);
+                    // //we do an eventual automatic scroll (only if we are at the bottom of the recyclerview)
+                    // if(((LinearLayoutManager) mRecyclerView.getLayoutManager()).findLastVisibleItemPosition() == mAdapter.getItemCount()-2){
+                    //     mRecyclerView.smoothScrollToPosition(mAdapter.getItemCount()-1);
+                    // }
+                }
+            }
+        }
+
+        @Override
+        public void onError(int[] reasons, long value) {
+            for (int aReason : reasons) {
+                switch (aReason) {
+                    case ErrorCodes.SAFETY_NET_EXCEPTION:
+                    case ErrorCodes.MISSED_CONNECTION:
+                        activity.showInternetLackDialog(R.string.error_internet_lack_services, null);
+                        break;
+                    case ErrorCodes.MISSING_GOOGLE_TTS:
+                        sound.deactivate(DeactivableButton.DEACTIVATED_FOR_TTS_ERROR);
+                        //activity.showMissingGoogleTTSDialog();
+                        break;
+                    case ErrorCodes.GOOGLE_TTS_ERROR:
+                        sound.deactivate(DeactivableButton.DEACTIVATED_FOR_TTS_ERROR);
+                        //activity.showGoogleTTSErrorDialog();
+                        break;
+                    case VoiceTranslationService.MISSING_MIC_PERMISSION: {
+                        if(getContext() != null) {
+                            requestPermissions(VoiceTranslationService.REQUIRED_PERMISSIONS, VoiceTranslationService.REQUEST_CODE_REQUIRED_PERMISSIONS);
+                        }
+                        break;
+                    }
+                    default: {
+                        activity.onError(aReason, value);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+	
+	
 }

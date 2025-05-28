@@ -55,8 +55,8 @@ public class ConversationService extends VoiceTranslationService {
     private String textRecognized = "";
     private Translator translator;
     private String myPeerName;
-    private VadRecognizer mVoiceRecognizer;
-    private RecognizerListener mVoiceRecognizerCallback;
+    private VadRecognizer speechRecognizer;
+    private RecognizerListener speechRecognizerCallback;
     //private BluetoothHelper mBluetoothHelper;
     private Global global;
     private ConversationBluetoothCommunicator.Callback communicationCallback;
@@ -74,7 +74,7 @@ public class ConversationService extends VoiceTranslationService {
         mVoiceCallback = new Recorder.Callback() {
             @Override
             public void onVoiceStart() {
-                if (mVoiceRecognizer != null) {
+                if (speechRecognizer != null) {
                     super.onVoiceStart();
                     Log.e("recorder","onVoiceStart");
                     //we notify the client
@@ -84,14 +84,14 @@ public class ConversationService extends VoiceTranslationService {
 
             @Override
             public void onVoice(@NonNull float[] data, int size) {
-                if (mVoiceRecognizer != null) {
+                if (speechRecognizer != null) {
                     super.onVoice(data,size);
                     global.getLanguage(true, new Global.GetLocaleListener() {
                         @Override
                         public void onSuccess(CustomLocale result) {
                             int sampleRate = getVoiceRecorderSampleRate();
                             if (sampleRate != 0) {
-                                mVoiceRecognizer.recognize(data, SPEECH_BEAM_SIZE, result.getCode());
+                                speechRecognizer.recognize(data, SPEECH_BEAM_SIZE, result.getCode());
                             }
                         }
 
@@ -105,7 +105,7 @@ public class ConversationService extends VoiceTranslationService {
 
             @Override
             public void onVoiceEnd() {
-                if (mVoiceRecognizer != null) {
+                if (speechRecognizer != null) {
                     super.onVoiceEnd();
                     Log.e("recorder","onVoiceEnd");
                     // if the textRecognizer is not empty then it means that we have a result that has not been correctly recognized as final
@@ -223,8 +223,8 @@ public class ConversationService extends VoiceTranslationService {
 
         // speech recognition and translation initialization
         translator = global.getTranslator();
-        mVoiceRecognizer = global.getSpeechRecognizer();
-        mVoiceRecognizerCallback = new VoiceTranslationServiceRecognizerListener() {
+        speechRecognizer = global.getSpeechRecognizer();
+        speechRecognizerCallback = new VoiceTranslationServiceRecognizerListener() {
             @Override
             public void onSpeechRecognizedResult(String text, String languageCode, double confidenceScore, boolean isFinal) {
                 if (text != null && languageCode != null && !text.equals("") && !isMetaText(text)) {
@@ -251,7 +251,7 @@ public class ConversationService extends VoiceTranslationService {
             }
         };
 
-        mVoiceRecognizer.addCallback(mVoiceRecognizerCallback);
+        speechRecognizer.addCallback(speechRecognizerCallback);
         //mBluetoothHelper.start();
 
         //voice recorder initialization
@@ -297,9 +297,9 @@ public class ConversationService extends VoiceTranslationService {
     @Override
     public void onDestroy() {
         // Stop SpeechRecognizer
-        //mVoiceRecognizer.destroy();
-        mVoiceRecognizer.removeCallback(mVoiceRecognizerCallback);
-        mVoiceRecognizer = null;
+        //speechRecognizer.destroy();
+        speechRecognizer.removeCallback(speechRecognizerCallback);
+        speechRecognizer = null;
         //stop Bluetooth helper
         //mBluetoothHelper.stop();
         if(global.getBluetoothCommunicator() != null) {

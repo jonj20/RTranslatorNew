@@ -108,17 +108,17 @@ class VadOfflineRecog(context: Context) {
         )
     }
 
-    private fun runSecondPass(samples: FloatArray): String {
+    private fun runSecondPass(samples: FloatArray): OfflineRecognizerResult {
         val stream = offlineRecognizer.createStream()
         stream.acceptWaveform(samples, sampleRateInHz)
         offlineRecognizer.decode(stream)
         val result = offlineRecognizer.getResult(stream)
         stream.release()
-        return result.text
+        return result
     }
 
 
-    public fun processSamples(samples: FloatArray, callback:Callback) {
+    public fun processSamples(batchSize:Int, samples: FloatArray, callback:Callback) {
         //val bufferSize = 512 // in samples
         //var readIndex = 0
         Log.i(TAG, "processSamples : data[0]" + samples[0])
@@ -134,10 +134,10 @@ class VadOfflineRecog(context: Context) {
             //while(!vad.empty()) {
                 //var segment = vad.front()
                 //    Log.i(TAG, "runSecondPass" + samples.size)
-                    val text = runSecondPass(samples)
-                    Log.i(TAG, "runSecondPass text: " + text)
-                    if (text.isNotBlank()) {
-                        callback.notify(text)
+                    val result = runSecondPass(samples)
+                    Log.i(TAG, "runSecondPass text: " + result.text + " lang: " + result.lang)
+                    if (result.text.isNotBlank()) {
+                        callback.notify(batchSize, result.text, result.lang)
                     }
 
             //    vad.pop();
@@ -147,7 +147,7 @@ class VadOfflineRecog(context: Context) {
     }
 
     public interface Callback {
-        fun notify(text:String)
+        fun notify(batchSize:Int, text:String, lang:String)
     }
 
 }
