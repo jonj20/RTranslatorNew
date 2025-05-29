@@ -94,6 +94,8 @@
             android:foregroundServiceType="microphone"/>
         <service android:name="nie.translator.rtranslator.voice_translation._walkie_talkie_mode.WalkieTalkieService"
             android:foregroundServiceType="microphone"/>
+        <service android:name="nie.translator.rtranslator.voice_translation._streaming_mode.StreamTranslationService"
+            android:foregroundServiceType="microphone"/>
         <service android:name="nie.translator.rtranslator.GeneralService" />
 
         <provider

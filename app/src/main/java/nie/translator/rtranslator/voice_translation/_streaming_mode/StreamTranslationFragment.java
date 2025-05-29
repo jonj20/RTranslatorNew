@@ -6,6 +6,7 @@ import android.animation.Animator;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -19,6 +20,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -61,6 +63,7 @@ import nie.translator.rtranslator.utils.gui.ButtonSound;
 import nie.translator.rtranslator.utils.gui.DeactivableButton;
 import nie.translator.rtranslator.utils.gui.GuiTools;
 import nie.translator.rtranslator.utils.gui.LanguageListAdapter;
+import nie.translator.rtranslator.utils.gui.MicrophoneComunicable;
 import nie.translator.rtranslator.utils.gui.animations.CustomAnimator;
 import nie.translator.rtranslator.utils.gui.messages.GuiMessage;
 import nie.translator.rtranslator.utils.gui.messages.MessagesAdapter;
@@ -70,9 +73,10 @@ import nie.translator.rtranslator.voice_translation.VoiceTranslationFragment;
 import nie.translator.rtranslator.voice_translation.VoiceTranslationService;
 import nie.translator.rtranslator.voice_translation.VoiceTranslationActivity;
 
-public class StreamTranslationFragment extends VoiceTranslationFragment {
+public class StreamTranslationFragment  extends Fragment implements MicrophoneComunicable {
     public static final int DEFAULT_BEAM_SIZE = 1;
     public static final int MAX_BEAM_SIZE = 6;
+    public static final long LONG_PRESS_THRESHOLD_MS = 700;
     private VoiceTranslationActivity activity;
     private Global global;
     private Translator.TranslateListener translateListener;
@@ -84,12 +88,9 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
     //TranslatorFragment's GUI
     private MaterialButton translateButton;
     private ButtonMic leftMicBtn;
-    private FloatingActionButton walkieTalkieButton;
-    private FloatingActionButton conversationButton;
-    private FloatingActionButton walkieTalkieButtonSmall;
-    private FloatingActionButton conversationButtonSmall;
-    private TextView walkieTalkieButtonText;
-    private TextView conversationButtonText;
+    //private FloatingActionButton streamTranslationButton;
+
+
     private EditText inputText;
     private EditText outputText;
     private CardView firstLanguageSelector;
@@ -117,9 +118,11 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
     private boolean isScreenReduced = false;
     private boolean isInputEmpty = true;
     private boolean isOutputEmpty = true;
-    ViewTreeObserver.OnGlobalLayoutListener layoutListener;
+
     private static final int REDUCED_GUI_THRESHOLD_DP = 550;
 
+    private String inputTextCache = "";
+    private long lastPressedLeftMic = -1;
 
     //connection
     protected StreamTranslationService.StreamTranslationServiceCommunicator streamTranslationServiceCommunicator;
@@ -173,12 +176,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
         translateButton = view.findViewById(R.id.buttonTranslate);
         sound = view.findViewById(R.id.soundButton);
         leftMicBtn = view.findViewById(R.id.buttonMicLeft);
-        walkieTalkieButton = view.findViewById(R.id.buttonMicLeft);
-        conversationButton = view.findViewById(R.id.buttonMicRight);
-        walkieTalkieButtonSmall = view.findViewById(R.id.buttonWalkieTalkieSmall);
-        conversationButtonSmall = view.findViewById(R.id.buttonConversationSmall);
-        walkieTalkieButtonText = view.findViewById(R.id.textButton1);
-        conversationButtonText = view.findViewById(R.id.textButton2);
+        leftMicBtn.initialize(null);
         inputText = view.findViewById(R.id.multiAutoCompleteTextView);
         outputText = view.findViewById(R.id.multiAutoCompleteTextView2);
         lineSeparator = view.findViewById(R.id.lineSeparator);
@@ -212,6 +210,22 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
             getActivity().getWindow().setNavigationBarColor(Color.TRANSPARENT);
         }
 
+
+        final View.OnClickListener deactivatedClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(activity, getResources().getString(R.string.error_wait_initialization), Toast.LENGTH_SHORT).show();
+            }
+        };
+        final View.OnClickListener micMissingClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(activity, R.string.error_missing_mic_permissions, Toast.LENGTH_SHORT).show();
+            }
+        };
+
+
+
         // setting of the selected languages
         global.getFirstTextLanguage(true, new Global.GetLocaleListener() {
             @Override
@@ -233,30 +247,52 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
 
             }
         });
-        walkieTalkieButton.setOnClickListener(new View.OnClickListener() {
+
+
+        leftMicBtn.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View view) {
-                activity.setFragment(VoiceTranslationActivity.WALKIE_TALKIE_FRAGMENT);
+            public boolean onTouch(View v, MotionEvent event) {
+                switch(event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:  // PRESSED
+                        Log.d("mic", "leftMicBtn onTouch ACTION_DOWN");
+                        if (leftMicBtn.getActivationStatus() == DeactivableButton.ACTIVATED && leftMicBtn.getState() == ButtonMic.STATE_NORMAL) {
+            
+                            if(!leftMicBtn.isListening()){
+                                streamTranslationServiceCommunicator.startRecognizingFirstLanguage();
+                                //leftMicBtn.onVoiceStarted();
+                            }else{
+                                //leftMicBtn.onVoiceEnded();
+                                streamTranslationServiceCommunicator.stopRecognizingFirstLanguage();
+                            }
+                            lastPressedLeftMic = System.currentTimeMillis();
+                        }
+                        return true;
+                    case MotionEvent.ACTION_UP:  // RELEASED
+                        Log.d("mic", "leftMicBtn onTouch ACTION_UP");
+                        if(leftMicBtn.getActivationStatus() == DeactivableButton.ACTIVATED){
+                            if(leftMicBtn.getState() == ButtonMic.STATE_NORMAL && lastPressedLeftMic != -1){
+                                if(System.currentTimeMillis() - lastPressedLeftMic <= LONG_PRESS_THRESHOLD_MS){  //short click release
+
+                                }else{   //long click release
+                                    if(leftMicBtn.isListening()){
+                                        //leftMicBtn.onVoiceEnded();
+                                        streamTranslationServiceCommunicator.stopRecognizingFirstLanguage();
+                                    }
+                                }
+                            }
+                        }else{
+                            leftMicBtn.performClick();
+                        }
+                        lastPressedLeftMic = -1;
+                        return true;
+                }
+                return false;
             }
         });
-        conversationButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                activity.setFragment(VoiceTranslationActivity.PAIRING_FRAGMENT);
-            }
-        });
-        walkieTalkieButtonSmall.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                activity.setFragment(VoiceTranslationActivity.WALKIE_TALKIE_FRAGMENT);
-            }
-        });
-        conversationButtonSmall.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                activity.setFragment(VoiceTranslationActivity.PAIRING_FRAGMENT);
-            }
-        });
+        leftMicBtn.setOnClickListenerForDeactivatedForMissingMicPermission(micMissingClickListener);
+        leftMicBtn.setOnClickListenerForDeactivated(deactivatedClickListener);
+
+
         translateListener = new Translator.TranslateListener() {
             @Override
             public void onTranslatedText(String text, long resultID, boolean isFinal, CustomLocale languageOfText) {
@@ -407,6 +443,8 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
             @Override
             public void afterTextChanged(Editable s) {
                 if(global.getTranslator() != null){
+                    ///////////////todo
+
                     global.getTranslator().setLastInputText(new GuiMessage(new Message(global, s.toString()), true, true));
                 }
                 if(isInputEmpty != s.toString().isEmpty()){  //the input editText transitioned from empty to not empty or vice versa
@@ -429,6 +467,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
                             public void onAnimationEnd() {
                                 super.onAnimationEnd();
                                 animationInput = null;
+                                translateButton.performClick(); //simluate
                             }
                         });
                     }
@@ -488,11 +527,16 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
         outputText.addTextChangedListener(outputTextListener);
 
         //we restore the last input and output text
-        if(lastInputText != null){
-            inputText.setText(lastInputText.getMessage().getText());
+        // if(lastInputText != null){
+        //     inputText.setText(lastInputText.getMessage().getText());///
+        // }
+        if(inputTextCache != null){
+            inputText.setText(inputTextCache);///
         }
+
+
         if(lastOutputText != null){
-            outputText.setText(lastOutputText.getMessage().getText());
+            outputText.setText(lastOutputText.getMessage().getText());////
         }
         //we attach the translate listener
         global.getTranslator().addCallback(translateListener);
@@ -541,66 +585,9 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
         //we set some buttons to not clickable (it is done here as well as in the xml because android set clickable to true when we set an onClickListener)
         backButton.setClickable(false);
         settingsButtonReduced.setClickable(false);
-        walkieTalkieButtonSmall.setClickable(false);
-        conversationButtonSmall.setClickable(false);
+
         //we set the listener for the keyboard opening
-        layoutListener = new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                if(translateButtonHeight == 0){
-                    //we set the animations parameters
-                    textActionButtonHeight = walkieTalkieButtonText.getHeight();
-                    textActionButtonBottomMargin = ((ConstraintLayout.LayoutParams) walkieTalkieButtonText.getLayoutParams()).bottomMargin;
-                    actionButtonHeight = walkieTalkieButton.getHeight();
-                    translateButtonHeight = translateButton.getHeight();
-                    ConstraintLayout.LayoutParams layoutParams = (ConstraintLayout.LayoutParams) walkieTalkieButton.getLayoutParams();
-                    actionButtonTopMargin = layoutParams.topMargin;
-                    actionButtonBottomMargin = layoutParams.bottomMargin;
-                } else if(getView() != null) {  //we start detecting keyboard only when the view is rendered (we use the translateButtonHeight to detect that)
-                    int screenHeight = getView().getRootView().getHeight();
-                    int screenHeightDp = (int) Tools.convertPixelsToDp(activity, screenHeight);
 
-                    if(screenHeightDp < REDUCED_GUI_THRESHOLD_DP){
-                        //screen is reduced
-                        if(!isScreenReduced){
-                            isScreenReduced = true;
-
-                            onScreenSizeChanged(true);
-                        }
-                    }else{
-                        //screen is not reduced
-                        if(isScreenReduced){
-                            isScreenReduced = false;
-                            onScreenSizeChanged(false);
-                        }
-                    }
-                    // r.bottom is the bottom position of the window of the fragment (number of pixels from the top of the screen).
-                    // keyboardHeight is the difference between screenHeight (pixels from top to bottom of the screen) and r.button (pixels from the top of the screen and the bottom of the window of the Fragment).
-                    Rect r = new Rect();
-                    getView().getWindowVisibleDisplayFrame(r);
-                    int keyboardHeight = screenHeight - r.bottom;
-
-                    Log.d("keyboard", "keypadHeight = " + keyboardHeight);
-
-                    if (keyboardHeight > screenHeight * 0.15) { // 0.15 ratio is perhaps enough to determine keyboard height.
-                        // keyboard is opened
-                        if (!isKeyboardShowing) {
-                            isKeyboardShowing = true;
-                            onKeyboardVisibilityChanged(true);
-                        }
-                    } else {
-                        // keyboard is closed
-                        if (isKeyboardShowing) {
-                            isKeyboardShowing = false;
-                            onKeyboardVisibilityChanged(false);
-                        }
-                    }
-                }
-            }
-        };
-        if(getView() != null) {
-            getView().getViewTreeObserver().addOnGlobalLayoutListener(layoutListener);
-        }
 
         // tts initialization
         ttsListener = new UtteranceProgressListener() {
@@ -726,13 +713,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
                 animationKeyboardTop.cancel();
             }
             if (compress) {
-                // animationKeyboardButton = animator.animateTranslationButtonsCompress(activity, this, walkieTalkieButton, walkieTalkieButtonText, conversationButton, conversationButtonText, walkieTalkieButtonSmall, conversationButtonSmall, hideActionButtons, new CustomAnimator.Listener() {
-                //     @Override
-                //     public void onAnimationEnd() {
-                //         super.onAnimationEnd();
-                //         animationKeyboardButton = null;
-                //     }
-                // });
+
                 animationKeyboardTop = animator.animateCompressActionBar(activity, toolbarContainer, title, settingsButton, settingsButtonReduced, backButton, new CustomAnimator.Listener() {
                     @Override
                     public void onAnimationEnd() {
@@ -741,13 +722,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
                     }
                 });
             } else {
-                // animationKeyboardButton = animator.animateTranslationButtonsEnlarge(activity, this, walkieTalkieButton, walkieTalkieButtonText, conversationButton, conversationButtonText, walkieTalkieButtonSmall, conversationButtonSmall, new CustomAnimator.Listener() {
-                //     @Override
-                //     public void onAnimationEnd() {
-                //         super.onAnimationEnd();
-                //         animationKeyboardButton = null;
-                //     }
-                // });
+
                 animationKeyboardTop = animator.animateEnlargeActionBar(activity, toolbarContainer, title, settingsButton, settingsButtonReduced, backButton, new CustomAnimator.Listener() {
                     @Override
                     public void onAnimationEnd() {
@@ -853,7 +828,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
  
 
 
-    @Override
+  //  @Override
     protected void connectToService() {
         activity.connectToStreamTranslationService(streamTranslationServiceCallback, new ServiceCommunicatorListener() {
             @Override
@@ -891,41 +866,74 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
 
             @Override
             public void onFailure(int[] reasons, long value) {
-                StreamTranslationFragment.super.onFailureConnectingWithService(reasons, value);
+                onFailureConnectingWithService(reasons, value);
             }
         });
     }
 
 
 
+    protected void onFailureConnectingWithService(int[] reasons, long value) {
+        for (int aReason : reasons) {
+            switch (aReason) {
+                case ErrorCodes.MISSED_ARGUMENT:
+                case ErrorCodes.SAFETY_NET_EXCEPTION:
+                case ErrorCodes.MISSED_CONNECTION:
+                    //creation of the dialog.
+                    AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+                    builder.setMessage(R.string.error_internet_lack_accessing);
+                    builder.setNegativeButton(R.string.exit, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            activity.exitFromVoiceTranslation();
+                        }
+                    });
+                    builder.setPositiveButton(R.string.retry, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            connectToService();
+                        }
+                    });
+                    AlertDialog dialog = builder.create();
+                    dialog.setCanceledOnTouchOutside(false);
+                    dialog.show();
+                    break;
+                case ErrorCodes.MISSING_GOOGLE_TTS:
+                    activity.showMissingGoogleTTSDialog(null);
+                    break;
+                case ErrorCodes.GOOGLE_TTS_ERROR:
+                    activity.showGoogleTTSErrorDialog(new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            connectToService();
+                        }
+                    });
+                    break;
+                default:
+                    activity.onError(aReason, value);
+                    break;
+            }
+        }
+    }
 
-
-    @Override
+   // @Override
     public void restoreAttributesFromService() {
         streamTranslationServiceCommunicator.getAttributes(new VoiceTranslationService.AttributesListener() {
             @Override
             public void onSuccess(ArrayList<GuiMessage> messages, boolean isMicMute, boolean isAudioMute, boolean isTTSError, final boolean isEditTextOpen, boolean isBluetoothHeadsetConnected, boolean isMicAutomatic, boolean isMicActivated, int listeningMic) {
                 // initialization with service values
                 //container.setVisibility(View.VISIBLE);
-                mAdapter = new MessagesAdapter(messages, new MessagesAdapter.Callback() {
-                    @Override
-                    public void onFirstItemAdded() {
-                  ///      description.setVisibility(View.GONE);
-                        //mRecyclerView.setVisibility(View.VISIBLE);
-                    }
-                });
+//                mAdapter = new MessagesAdapter(messages, new MessagesAdapter.Callback() {
+//                    @Override
+//                    public void onFirstItemAdded() {
+//                  ///      description.setVisibility(View.GONE);
+//                        //mRecyclerView.setVisibility(View.VISIBLE);
+//                    }
+//                });
                 //mRecyclerView.setAdapter(mAdapter);
             
-                if(isMicAutomatic) {
-
-                    leftMicBtn.setMute(true, false);
-     
-               
-                    leftMicBtn.onVoiceEnded(false);
                 
-                }else{
-                    //StreamTranslationFragment.this.isMicAutomatic = false;
-        
+                
                     leftMicBtn.setMute(false, false);
            
                     if(isMicActivated) {
@@ -940,7 +948,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
             
                     }
        
-                }
+                
 
                 sound.setMute(isAudioMute);
                 if(isTTSError){
@@ -987,7 +995,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
         streamTranslationServiceCommunicator.stopSound();
     }
 
-    @Override
+  //  @Override
     protected void deactivateInputs(int cause) {
     
         leftMicBtn.deactivate(cause);
@@ -999,7 +1007,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
         }
     }
 
-    @Override
+  //  @Override
     protected void activateInputs(boolean start) {
         Log.d("mic", "activatedInputs");
       
@@ -1112,9 +1120,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
     @Override
     public void onStop() {
         super.onStop();
-        if(getView() != null) {
-            getView().getViewTreeObserver().removeOnGlobalLayoutListener(layoutListener);
-        }
+
         mHandler.removeCallbacksAndMessages(null);
         firstLanguageSelector.setOnClickListener(null);
         secondLanguageSelector.setOnClickListener(null);
@@ -1291,8 +1297,11 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
         public void onMessage(GuiMessage message) {
             super.onMessage(message);
             if (message != null) {
-                int messageIndex = mAdapter.getMessageIndex(message.getMessageID());
-                if(messageIndex != -1) {
+                //int messageIndex = mAdapter.getMessageIndex(message.getMessageID());
+
+                inputTextCache += message.getMessage().getText();
+
+                //if(messageIndex != -1) {
                     //TODO
                     // if((!mRecyclerView.isAnimating() && !mRecyclerView.getLayoutManager().isSmoothScrolling()) || message.isFinal()) {
                     //     if(message.isFinal()){
@@ -1302,7 +1311,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
                     //     }
                     //     mAdapter.setMessage(messageIndex, message);
                     // }
-                }else{
+                //}else{
                     // if(mRecyclerView.getItemAnimator() != null) {
                     //     mRecyclerView.getItemAnimator().endAnimations();
                     // }
@@ -1311,7 +1320,7 @@ public class StreamTranslationFragment extends VoiceTranslationFragment {
                     // if(((LinearLayoutManager) mRecyclerView.getLayoutManager()).findLastVisibleItemPosition() == mAdapter.getItemCount()-2){
                     //     mRecyclerView.smoothScrollToPosition(mAdapter.getItemCount()-1);
                     // }
-                }
+                //}
             }
         }
 

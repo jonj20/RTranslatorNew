@@ -218,7 +218,9 @@ public class TranslationFragment extends Fragment {
         conversationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                activity.setFragment(VoiceTranslationActivity.PAIRING_FRAGMENT);
+                //activity.setFragment(VoiceTranslationActivity.PAIRING_FRAGMENT);
+                //todo ...
+                activity.setFragment(VoiceTranslationActivity.STREAM_TRANSLATION_FRAGMENT);
             }
         });
         walkieTalkieButtonSmall.setOnClickListener(new View.OnClickListener() {
