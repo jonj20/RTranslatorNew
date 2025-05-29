@@ -480,6 +480,10 @@ public class VoiceTranslationActivity extends GeneralActivity {
                 }
             } else if (fragment instanceof WalkieTalkieFragment) {
                 setFragment(DEFAULT_FRAGMENT);
+
+            } else if (fragment instanceof StreamTranslationFragment) {
+                setFragment(DEFAULT_FRAGMENT);
+
             } else if (fragment instanceof PairingFragment) {
                 setFragment(DEFAULT_FRAGMENT);
             }else{

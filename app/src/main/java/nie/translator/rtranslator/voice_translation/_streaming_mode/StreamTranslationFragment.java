@@ -77,6 +77,7 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
     public static final int DEFAULT_BEAM_SIZE = 1;
     public static final int MAX_BEAM_SIZE = 6;
     public static final long LONG_PRESS_THRESHOLD_MS = 700;
+    private boolean isMicAutomatic = true;
     private VoiceTranslationActivity activity;
     private Global global;
     private Translator.TranslateListener translateListener;
@@ -93,10 +94,11 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
 
     private EditText inputText;
     private EditText outputText;
+	private AppCompatImageButton exitButton;
     private CardView firstLanguageSelector;
     private CardView secondLanguageSelector;
     private AppCompatImageButton invertLanguagesButton;
-    private View lineSeparator;
+    //private View lineSeparator;
     private ConstraintLayout toolbarContainer;
     private TextView title;
     private AppCompatImageButton settingsButton;
@@ -121,7 +123,6 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
 
     private static final int REDUCED_GUI_THRESHOLD_DP = 550;
 
-    private String inputTextCache = "";
     private long lastPressedLeftMic = -1;
 
     //connection
@@ -153,6 +154,10 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
     @Nullable
     private Animator animationOutput;
 
+    //adddd
+    String lastInputText = "";
+    String lastOutputText = "";
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -174,12 +179,13 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
         secondLanguageSelector = view.findViewById(R.id.secondLanguageSelectorContainer);
         invertLanguagesButton = view.findViewById(R.id.invertLanguages);
         translateButton = view.findViewById(R.id.buttonTranslate);
+        exitButton = view.findViewById(R.id.exitButton);
         sound = view.findViewById(R.id.soundButton);
         leftMicBtn = view.findViewById(R.id.buttonMicLeft);
-        leftMicBtn.initialize(null);
+        leftMicBtn.initialize(null, view.findViewById(R.id.leftLineL), view.findViewById(R.id.centerLineL), view.findViewById(R.id.rightLineL));
         inputText = view.findViewById(R.id.multiAutoCompleteTextView);
         outputText = view.findViewById(R.id.multiAutoCompleteTextView2);
-        lineSeparator = view.findViewById(R.id.lineSeparator);
+        //lineSeparator = view.findViewById(R.id.lineSeparator);
         toolbarContainer = view.findViewById(R.id.toolbarTranslatorContainer);
         title = view.findViewById(R.id.title2);
         settingsButton = view.findViewById(R.id.settingsButton);
@@ -214,7 +220,7 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
         final View.OnClickListener deactivatedClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(activity, getResources().getString(R.string.error_wait_initialization), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(activity, getResources().getString(R.string.error_wait_initialization), Toast.LENGTH_SHORT).show();
             }
         };
         final View.OnClickListener micMissingClickListener = new View.OnClickListener() {
@@ -256,7 +262,9 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
                     case MotionEvent.ACTION_DOWN:  // PRESSED
                         Log.d("mic", "leftMicBtn onTouch ACTION_DOWN");
                         if (leftMicBtn.getActivationStatus() == DeactivableButton.ACTIVATED && leftMicBtn.getState() == ButtonMic.STATE_NORMAL) {
-            
+                            if(isMicAutomatic) {
+                                switchMicMode(false);
+                            }
                             if(!leftMicBtn.isListening()){
                                 streamTranslationServiceCommunicator.startRecognizingFirstLanguage();
                                 //leftMicBtn.onVoiceStarted();
@@ -401,8 +409,17 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
                 global.getTranslator().resetLastOutput();
             }
         });
+		
+        exitButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d("button", "exitButton pressed");
+                activity.onBackPressed();
+            }
+        });
     }
 
+    @Override
     public void onStart() {
         super.onStart();
         if (getArguments() != null) {
@@ -421,9 +438,6 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
             connectToService();
         }
 
-
-        GuiMessage lastInputText = global.getTranslator().getLastInputText();
-        GuiMessage lastOutputText = global.getTranslator().getLastOutputText();
 
         //we hide the keyboard
         if(getView() != null) {
@@ -505,21 +519,27 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
                         animationOutput.cancel();
                     }
                     if(!s.toString().isEmpty()) {
-                        animationOutput = animator.animateOutputAppearance(activity, outputContainer, lineSeparator, new CustomAnimator.Listener() {
-                            @Override
-                            public void onAnimationEnd() {
-                                super.onAnimationEnd();
-                                animationOutput = null;
-                            }
-                        });
+                         Log.d("button", "setVisibility VISIBLE");
+                        outputContainer.setVisibility(View.VISIBLE);
+       
+                        // animationOutput = animator.animateOutputAppearance(activity, outputContainer, lineSeparator, new CustomAnimator.Listener() {
+                        //     @Override
+                        //     public void onAnimationEnd() {
+                        //         super.onAnimationEnd();
+                        //         animationOutput = null;
+                        //     }
+                        // });
                     }else{
-                        animationOutput = animator.animateOutputDisappearance(activity, outputContainer, lineSeparator, new CustomAnimator.Listener() {
-                            @Override
-                            public void onAnimationEnd() {
-                                super.onAnimationEnd();
-                                animationOutput = null;
-                            }
-                        });
+                        Log.d("button", "setVisibility GONE");
+                        outputContainer.setVisibility(View.GONE);
+         
+                        // animationOutput = animator.animateOutputDisappearance(activity, outputContainer, lineSeparator, new CustomAnimator.Listener() {
+                        //     @Override
+                        //     public void onAnimationEnd() {
+                        //         super.onAnimationEnd();
+                        //         animationOutput = null;
+                        //     }
+                        // });
                     }
                 }
             }
@@ -527,16 +547,12 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
         outputText.addTextChangedListener(outputTextListener);
 
         //we restore the last input and output text
-        // if(lastInputText != null){
-        //     inputText.setText(lastInputText.getMessage().getText());///
-        // }
-        if(inputTextCache != null){
-            inputText.setText(inputTextCache);///
+        if(lastInputText != null){
+            inputText.setText(lastInputText);
         }
 
-
         if(lastOutputText != null){
-            outputText.setText(lastOutputText.getMessage().getText());////
+           outputText.setText(lastOutputText);
         }
         //we attach the translate listener
         global.getTranslator().addCallback(translateListener);
@@ -932,7 +948,7 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
 //                });
                 //mRecyclerView.setAdapter(mAdapter);
             
-                
+                    Log.d("stream", "===>onSuccess: messages size : "+ messages.size());
                 
                     leftMicBtn.setMute(false, false);
            
@@ -1016,6 +1032,23 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
         sound.activate(false);
     }
 
+    private void switchMicMode(boolean automatic){
+        if(isMicAutomatic != automatic){
+            //walkieTalkieServiceCallback.onVoiceEnded();
+            isMicAutomatic = automatic;
+            if(!isMicAutomatic){  //we switched from automatic to manual
+              
+                leftMicBtn.setMute(false);
+               
+                streamTranslationServiceCommunicator.startManualRecognition();
+            }else{
+                streamTranslationServiceCommunicator.stopManualRecognition();
+              
+                leftMicBtn.setMute(true);
+              
+            }
+        }
+    }
 
 
 
@@ -1299,7 +1332,31 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
             if (message != null) {
                 //int messageIndex = mAdapter.getMessageIndex(message.getMessageID());
 
-                inputTextCache += message.getMessage().getText();
+
+                Log.d("stream", "===>onMessage:: "+ message.getMessage().getText() + "/"+ message.getMessageID() + "/"+ message.isFinal());
+  
+                if(message.getMessageID() == -1) {// asr 
+
+                    lastInputText += message.getMessage().getText();
+                    if(lastInputText != null){
+                        Log.d("stream", "input text ");
+                        inputText.setText(lastInputText);
+                    }
+                } else {
+                    String temp = "";
+                    if(message.isFinal()) {
+                        lastOutputText += message.getMessage().getText();
+                    } else {
+                        temp = message.getMessage().getText();
+                    }
+
+                    Log.d("stream", "output text ");
+
+                    if(lastOutputText != null){
+                        Log.d("stream", "output text 2");
+                        outputText.setText(lastOutputText + temp);
+                    }
+                }
 
                 //if(messageIndex != -1) {
                     //TODO

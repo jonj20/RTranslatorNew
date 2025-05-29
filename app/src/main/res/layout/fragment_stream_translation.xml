@@ -42,23 +42,46 @@
 
         <TextView
             android:id="@+id/title2"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="8dp"
-            android:elevation="8dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:fontFamily="@font/nunito_sans_semibold"
+            android:maxLines="1"
             android:text="@string/app_name"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textColor="@color/primary_very_dark"
             android:textSize="22sp"
             android:textStyle="bold"
+            android:scrollHorizontally="true"
+            android:ellipsize="end"
             app:layout_constraintBottom_toBottomOf="@+id/toolbarTranslatorContainer"
-            app:layout_constraintEnd_toEndOf="@+id/toolbarTranslatorContainer"
+            app:layout_constraintEnd_toStartOf="@+id/soundButton"
             app:layout_constraintHorizontal_bias="0"
-            app:layout_constraintStart_toStartOf="@+id/toolbarTranslatorContainer"
+            app:layout_constraintStart_toEndOf="@+id/exitButton"
             app:layout_constraintTop_toTopOf="@+id/toolbarTranslatorContainer"
             app:layout_constraintVertical_bias="0.50" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/exitButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="@android:color/transparent"
+            android:clickable="true"
+            android:focusable="true"
+            android:scaleType="fitCenter"
+            android:src="@drawable/back_arrow_icon2"
+            android:tint="@color/primary_very_dark"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="@+id/toolbarTranslator"
+            app:layout_constraintEnd_toStartOf="@+id/settingsButton"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
 
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/settingsButton"
@@ -443,7 +466,7 @@
                 android:id="@+id/nestedScrollViewDown"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:background="@color/primary_very_lite"
+                android:background="#FFFFFF"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -458,10 +481,8 @@
                         android:id="@+id/outputContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:alpha="0"
-                        android:background="#D5C8C8"
                         android:focusable="true"
-                        android:visibility="invisible">
+                        android:visibility="visible">
 
                         <EditText
                             android:id="@+id/multiAutoCompleteTextView2"
@@ -585,45 +606,76 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="1.0">
 
-            <!--com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/buttonMicLeft"
+
+
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:src="@drawable/walkie_talkie_icon"
-                android:visibility="visible"
-                app:backgroundTint="@color/primary_very_lite"
-                app:elevation="0dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:maxImageSize="40dp"
-                app:rippleColor="@color/light_gray"
-                app:tint="@color/primary_very_dark" /-->
+                app:layout_constraintTop_toTopOf="parent">
 
-            <nie.translator.rtranslator.utils.gui.ButtonMic
-                android:id="@+id/buttonMicLeft"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/circle"
-                android:src="@drawable/mic_icon"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="0.0"
-                app:tint="@color/primary_very_dark" />
+                <nie.translator.rtranslator.utils.gui.ButtonMic
+                    android:id="@+id/buttonMicLeft"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="24dp"
+                    android:background="@drawable/circle"
+                    android:src="@drawable/mic_icon"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/primary_very_dark" />
+
+                <View
+                    android:id="@+id/leftLineL"
+                    android:layout_width="5dp"
+                    android:layout_height="19dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/rounded_line"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="@+id/buttonMicLeft"
+                    app:layout_constraintEnd_toStartOf="@+id/centerLineL"
+                    app:layout_constraintHorizontal_bias="1.0"
+                    app:layout_constraintStart_toStartOf="@+id/buttonMicLeft"
+                    app:layout_constraintTop_toTopOf="@+id/buttonMicLeft" />
+
+                <View
+                    android:id="@+id/centerLineL"
+                    android:layout_width="5dp"
+                    android:layout_height="24dp"
+                    android:background="@drawable/rounded_line"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="@+id/buttonMicLeft"
+                    app:layout_constraintEnd_toEndOf="@+id/buttonMicLeft"
+                    app:layout_constraintStart_toStartOf="@+id/buttonMicLeft"
+                    app:layout_constraintTop_toTopOf="@+id/buttonMicLeft" />
+
+                <View
+                    android:id="@+id/rightLineL"
+                    android:layout_width="5dp"
+                    android:layout_height="12dp"
+                    android:layout_marginStart="4dp"
+                    android:background="@drawable/rounded_line"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="@+id/buttonMicLeft"
+                    app:layout_constraintEnd_toEndOf="@+id/buttonMicLeft"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toEndOf="@+id/centerLineL"
+                    app:layout_constraintTop_toTopOf="@+id/buttonMicLeft" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonTranslate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
                 android:backgroundTint="@color/primary"
                 android:lines="1"
                 android:maxWidth="150dp"
@@ -636,7 +688,7 @@
                 app:elevation="0dp"
                 app:layout_constraintBottom_toBottomOf="@+id/buttonMicLeft"
                 app:layout_constraintEnd_toStartOf="parent"
-                app:layout_constraintHorizontal_bias="0.24"
+                app:layout_constraintHorizontal_bias="0.229"
                 app:layout_constraintStart_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>

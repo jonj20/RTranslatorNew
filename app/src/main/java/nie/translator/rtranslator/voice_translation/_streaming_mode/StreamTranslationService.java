@@ -51,8 +51,8 @@ public class StreamTranslationService extends VoiceTranslationService {
     public static final int CHANGE_SECOND_LANGUAGE = 23;
     public static final int GET_FIRST_LANGUAGE = 24;
     public static final int GET_SECOND_LANGUAGE = 25;
- 
- 
+    public static final int START_MANUAL_RECOGNITION = 26;
+    public static final int STOP_MANUAL_RECOGNITION = 27;
     public static final int START_RECOGNIZING_FIRST_LANGUAGE = 28;
     public static final int STOP_RECOGNIZING_FIRST_LANGUAGE = 29;
 
@@ -76,7 +76,6 @@ public class StreamTranslationService extends VoiceTranslationService {
     @Override
     public void onCreate() {
         super.onCreate();
-        isMicAutomatic = false;
         translator = ((Global) getApplication()).getTranslator();
         speechRecognizer = ((Global) getApplication()).getSpeechRecognizer();
         clientHandler = new Handler(new Handler.Callback() {
@@ -135,7 +134,28 @@ public class StreamTranslationService extends VoiceTranslationService {
                                 }
                                 break;
 
-  
+
+                            case START_MANUAL_RECOGNITION:
+                                isMicAutomatic = false;
+                                if(mVoiceRecorder != null) {
+                                    mVoiceRecorder.setManualMode(true);
+                                }
+                                break;
+                            case STOP_MANUAL_RECOGNITION:
+                                isMicAutomatic = true;
+                                if(manualRecognizingFirstLanguage || manualRecognizingSecondLanguage || manualRecognizingAutoLanguage){
+                                    if(mVoiceRecorder != null) {
+                                        mVoiceRecorder.stop();
+                                    }
+                                    manualRecognizingFirstLanguage = false;
+                                    manualRecognizingSecondLanguage = false;
+                                    manualRecognizingAutoLanguage = false;
+                                }
+                                if(mVoiceRecorder != null) {
+                                    mVoiceRecorder.setManualMode(false);
+                                }
+                                break;
+
                             case START_RECOGNIZING_FIRST_LANGUAGE:
                                 Log.d("mic", "service START_RECOGNIZING_FIRST_LANGUAGE");
                                 if(!manualRecognizingSecondLanguage && !isMicAutomatic) {
@@ -257,6 +277,7 @@ public class StreamTranslationService extends VoiceTranslationService {
                         if(isFinal && CustomLocale.containsLanguage(ttsLanguages, languageOfText)) { // check if the text can be speak
                             speak(text, languageOfText);
                         }
+                        //222222
                         GuiMessage message = new GuiMessage(new Message(StreamTranslationService.this, text), resultID, true, isFinal);
                         StreamTranslationService.super.notifyMessage(message);
                         // we save every new message in the exchanged messages so that the fragment can restore them
@@ -416,6 +437,15 @@ public class StreamTranslationService extends VoiceTranslationService {
 
     private void translate(final String textToTranslate, final CustomLocale languageInput, final CustomLocale languageOutput, int beamSize, boolean saveResults, final Translator.TranslateListener responseListener){
         if(!isMetaText(textToTranslate)) {
+
+            if(true) {
+                //111111
+                GuiMessage message = new GuiMessage(new Message(StreamTranslationService.this, textToTranslate), true, true);
+                StreamTranslationService.super.notifyMessage(message);
+                // we save every new message in the exchanged messages so that the fragment can restore them
+                StreamTranslationService.super.addOrUpdateMessage(message);
+            }
+
             translator.translate(textToTranslate, languageInput, languageOutput, beamSize, saveResults, responseListener);
         }else{
             //we restart the mic here
@@ -499,7 +529,17 @@ public class StreamTranslationService extends VoiceTranslationService {
             super.sendToService(bundle);
         }
 
- 
+        public void startManualRecognition() {
+            Bundle bundle = new Bundle();
+            bundle.putInt("command", START_MANUAL_RECOGNITION);
+            super.sendToService(bundle);
+        }
+
+        public void stopManualRecognition() {
+            Bundle bundle = new Bundle();
+            bundle.putInt("command", STOP_MANUAL_RECOGNITION);
+            super.sendToService(bundle);
+        }
 
         public void startRecognizingFirstLanguage() {
             Log.d("mic", "comm startRecognizingFirstLanguage");
