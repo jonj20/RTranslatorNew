@@ -160,6 +160,11 @@ public class StreamTranslationService extends VoiceTranslationService {
                                 Log.d("mic", "service START_RECOGNIZING_FIRST_LANGUAGE");
                                 if(!manualRecognizingSecondLanguage && !isMicAutomatic) {
                                     manualRecognizingFirstLanguage = true;
+
+                                    if(mVoiceRecorder != null && !mVoiceRecorder.isStreamMode()) {
+                                        mVoiceRecorder.setStreamMode(true);
+                                    }
+                                    
                                     if(mVoiceRecorder != null) {
                                         Log.d("mic", "service startRecording");
                                         mVoiceRecorder.startRecording();
@@ -213,6 +218,26 @@ public class StreamTranslationService extends VoiceTranslationService {
                     //we stop speech recognition
                     stopVoiceRecorder();
                     notifyMicDeactivated();   // we notify the client
+                    // we start the speech recognition in both languages
+                    speechRecognizer.recognize(data, SPEECH_BEAM_SIZE, firstLanguage.getCode(), secondLanguage.getCode());
+                }
+            }
+            
+            @Override
+            public void onVoiceStream(@NonNull float[] data, int size) {
+                super.onVoiceStream(data,size);
+
+                Log.e("service","onVoiceStream: "+ size);
+                if(manualRecognizingFirstLanguage){
+                    // we start the speech recognition in only the first language
+                    speechRecognizer.recognize(data, SPEECH_BEAM_SIZE, firstLanguage.getCode());
+                } else if (manualRecognizingSecondLanguage) {
+                    // we start the speech recognition in only the second language
+                    speechRecognizer.recognize(data, SPEECH_BEAM_SIZE, secondLanguage.getCode());
+                }else if(manualRecognizingAutoLanguage){
+                    // we start the speech recognition in both languages
+                    speechRecognizer.recognize(data, SPEECH_BEAM_SIZE, firstLanguage.getCode(), secondLanguage.getCode());
+                }else if(isMicAutomatic) {
                     // we start the speech recognition in both languages
                     speechRecognizer.recognize(data, SPEECH_BEAM_SIZE, firstLanguage.getCode(), secondLanguage.getCode());
                 }

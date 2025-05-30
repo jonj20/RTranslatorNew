@@ -150,4 +150,50 @@ class VadOfflineRecog(context: Context) {
         fun notify(batchSize:Int, text:String, lang:String)
     }
 
+
+    public fun processVadSamples(batchSize:Int, samples: FloatArray, callback:VadCallback) {
+        val bufferSize = 512 // in samples
+        var readIndex = 0
+        Log.i(TAG, "processSamples : data[0]" + samples[0])
+
+        val buffer = ShortArray(bufferSize)
+
+        while(readIndex < samples.size) {
+            val len = if((samples.size - readIndex) > bufferSize)  bufferSize else samples.size - readIndex
+            Log.i(TAG, "sliceArray len:" + len + " readIndex:" + readIndex)
+            var sliceBuffer = samples.sliceArray(readIndex until readIndex + len)
+            readIndex += len
+
+            vad.acceptWaveform(sliceBuffer)
+            while(!vad.empty()) {
+                var segment = vad.front()
+                
+                //segment.samples
+
+
+                vad.pop();
+            }
+        }
+
+    }
+
+    public interface VadCallback {
+        fun notify(batchSize:Int, text:String, lang:String)
+    }
+
+
+
+
+
+    //single
+    companion object {
+        @Volatile private var instance: VadOfflineRecog? = null
+        
+        public fun getInstance(context: Context): VadOfflineRecog {
+            return instance ?: synchronized(this) {
+                instance ?: VadOfflineRecog(context).also { instance = it }
+            }
+        }
+    }
+
 }

@@ -155,8 +155,8 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
     private Animator animationOutput;
 
     //adddd
-    String lastInputText = "";
-    String lastOutputText = "";
+    String lastInputTextCache = "";
+    String lastOutputTextCache = "";
 
 
     @Override
@@ -457,9 +457,8 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
             @Override
             public void afterTextChanged(Editable s) {
                 if(global.getTranslator() != null){
-                    ///////////////todo
-
-                    global.getTranslator().setLastInputText(new GuiMessage(new Message(global, s.toString()), true, true));
+                    ///not save cache
+                    //global.getTranslator().setLastInputText(new GuiMessage(new Message(global, s.toString()), true, true));
                 }
                 if(isInputEmpty != s.toString().isEmpty()){  //the input editText transitioned from empty to not empty or vice versa
                     isInputEmpty = s.toString().isEmpty();
@@ -547,12 +546,12 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
         outputText.addTextChangedListener(outputTextListener);
 
         //we restore the last input and output text
-        if(lastInputText != null){
-            inputText.setText(lastInputText);
+        if(lastInputTextCache != null){
+            inputText.setText(lastInputTextCache);
         }
 
-        if(lastOutputText != null){
-           outputText.setText(lastOutputText);
+        if(lastOutputTextCache != null){
+           outputText.setText(lastOutputTextCache);
         }
         //we attach the translate listener
         global.getTranslator().addCallback(translateListener);
@@ -1271,7 +1270,7 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
         }
 
         // possible activation of the mic
-            startMicrophone(false);   //TODO //check need
+        //    startMicrophone(false);   //TODO //check need
 
     }
 
@@ -1337,24 +1336,24 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
   
                 if(message.getMessageID() == -1) {// asr 
 
-                    lastInputText += message.getMessage().getText();
-                    if(lastInputText != null){
+                    lastInputTextCache += message.getMessage().getText();
+                    if(lastInputTextCache != null){
                         Log.d("stream", "input text ");
-                        inputText.setText(lastInputText);
+                        inputText.setText(lastInputTextCache);
                     }
                 } else {
                     String temp = "";
                     if(message.isFinal()) {
-                        lastOutputText += message.getMessage().getText();
+                        lastOutputTextCache += message.getMessage().getText();
                     } else {
                         temp = message.getMessage().getText();
                     }
 
                     Log.d("stream", "output text ");
 
-                    if(lastOutputText != null){
+                    if(lastOutputTextCache != null){
                         Log.d("stream", "output text 2");
-                        outputText.setText(lastOutputText + temp);
+                        outputText.setText(lastOutputTextCache + temp);
                     }
                 }
 

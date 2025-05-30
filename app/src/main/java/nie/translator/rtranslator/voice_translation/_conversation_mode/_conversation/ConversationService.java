@@ -102,6 +102,11 @@ public class ConversationService extends VoiceTranslationService {
                     });
                 }
             }
+            
+            @Override
+            public void onVoiceStream(@NonNull float[] data, int size) {
+                super.onVoiceStream(data,size);
+            }
 
             @Override
             public void onVoiceEnd() {

@@ -252,6 +252,11 @@ public class WalkieTalkieService extends VoiceTranslationService {
                     speechRecognizer.recognize(data, SPEECH_BEAM_SIZE, firstLanguage.getCode(), secondLanguage.getCode());
                 }
             }
+            
+            @Override
+            public void onVoiceStream(@NonNull float[] data, int size) {
+                super.onVoiceStream(data,size);
+            }
 
             @Override
             public void onVoiceEnd() {

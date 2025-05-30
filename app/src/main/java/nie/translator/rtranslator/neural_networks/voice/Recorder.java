@@ -49,6 +49,7 @@ public class Recorder {
     private final Global global;
     private boolean isRecording;
     private boolean isManualMode = false;
+    private boolean isStreamMode = false;
     private boolean isBluetoothHeadsetConnected = false;
     private boolean isBluetoothHeadsetUsed = false;
     public static final int[] SAMPLE_RATE_CANDIDATES = new int[]{16000};
@@ -89,6 +90,10 @@ public class Recorder {
     private AudioDeviceCallback audioDeviceCallback;
     AudioManager audioManager;
 
+    //vad
+    //private VadOfflineRecog vadOfflineRecog;
+    private boolean mVoiceHearted = false;
+    private long mLastVoiceHeardStopMillis = Long.MAX_VALUE;
 
     public Recorder(Global global, boolean useBluetoothHeadset, @NonNull Callback callback, @Nullable ConversationService.BluetoothHeadsetCallback bluetoothHeadsetCallback) {
         this.useBluetoothHeadset = useBluetoothHeadset;
@@ -100,6 +105,10 @@ public class Recorder {
         global.getPrevVoiceDuration();
         mCallback = callback;
         mCallback.setRecorder(this);
+
+        //vadOfflineRecog = VadOfflineRecog.getInstance(global);//new VadOfflineRecog(global);
+        mVoiceHearted = false;
+        mLastVoiceHeardStopMillis = Long.MAX_VALUE;
 
         // Try to create a new recording session.
         mAudioRecord = createAudioRecord();
@@ -221,6 +230,27 @@ public class Recorder {
         mCallback.onVoiceEnd();
     }
 
+    public void updateVoice() {
+        //convert the relevant portion of the circular mBuffer to a normal array
+        int voiceLength = getMBufferRangeSize(startVoiceIndex, tailIndex);
+        float[] data = new float[voiceLength];
+        int circularIndex = startVoiceIndex;
+        for(int i=0; i<voiceLength; i++){
+            data[i] = mBuffer[circularIndex];
+            if (circularIndex < mBuffer.length-1){
+                circularIndex++;
+            }else{
+                circularIndex = 0;
+            }
+        }
+        mCallback.onVoiceStream(data, voiceLength);
+        //reset relevant variables
+        startVoiceIndex = 0;  //is not necessary
+        mLastVoiceHeardMillis = Long.MAX_VALUE;
+    //    mCallback.onVoiceEnd();
+    }
+
+
     public void destroy(){
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback);
         if(connectedBleHeadset != null){
@@ -288,6 +318,21 @@ public class Recorder {
             }else{
                 start();
                 Log.d("mic", "manual mode deactivated");
+            }
+        }
+    }
+
+    public boolean isStreamMode() {
+        return isStreamMode;
+    }
+
+    public void setStreamMode(boolean mode) {
+        if(isStreamMode != mode) {
+            isStreamMode = mode;
+            if(isStreamMode){
+                Log.d("mic", "stream mode activated");
+            }else{
+                Log.d("mic", "stream mode deactivated");
             }
         }
     }
@@ -374,7 +419,52 @@ public class Recorder {
                     notifyVolumeLevel(mBuffer, oldTailIndex, tailIndex);
                     //we do the rest of voice processing
                     final long now = System.currentTimeMillis();
-                    if (isHearingVoice(mBuffer, oldTailIndex, tailIndex)) {
+
+
+                    if (isStreamMode) {  //manual test 
+
+                        if (isHearingVoice(mBuffer, oldTailIndex, tailIndex)) {
+                            if (mLastVoiceHeardMillis == Long.MAX_VALUE) {    // use Long's maximum limit to indicate that we have no voice
+                                mVoiceStartedMillis = now;
+                                if(!Thread.currentThread().isInterrupted()  && (mLastVoiceHeardStopMillis == Long.MAX_VALUE)) {
+                                    mCallback.onVoiceStart();
+                                }
+                                if (getMBufferSize() > prevVoiceLength) {
+                                    if (tailIndex - prevVoiceLength >= 0) {
+                                        startVoiceIndex = tailIndex - prevVoiceLength;
+                                    } else {
+                                        startVoiceIndex = mBuffer.length + (tailIndex - prevVoiceLength);  //we do a jump
+                                    }
+                                } else {
+                                    startVoiceIndex = headIndex;
+                                }
+                            }
+                            mLastVoiceHeardMillis = now;
+                            mVoiceHearted = true;
+                            if (now - (mVoiceStartedMillis - global.getPrevVoiceDuration()) > MAX_SPEECH_LENGTH_MILLIS) {
+                                if(!Thread.currentThread().isInterrupted()) {
+                                    end();
+                                }
+                            }
+                        } else {
+
+                            if (mLastVoiceHeardMillis != Long.MAX_VALUE) {
+                                if ((now - mLastVoiceHeardMillis > 800)  && mVoiceHearted) {
+                                    if(!Thread.currentThread().isInterrupted()) {
+                                        updateVoice();  //
+                                        mLastVoiceHeardStopMillis = now;
+                                        mVoiceHearted = false;
+                                    }
+                                }
+                
+                            }
+
+                         
+                        } 
+
+                    } else {
+
+                    if (isManualMode || isHearingVoice(mBuffer, oldTailIndex, tailIndex)) {
                         if (mLastVoiceHeardMillis == Long.MAX_VALUE) {    // use Long's maximum limit to indicate that we have no voice
                             mVoiceStartedMillis = now;
                             if(!Thread.currentThread().isInterrupted()) {
@@ -403,6 +493,10 @@ public class Recorder {
                             }
                         }
                     }
+
+                }
+
+
                 }
             }
             dismiss();
@@ -442,7 +536,7 @@ public class Recorder {
     }
 
     private boolean isHearingVoice(float[] buffer, int begin, int end) {
-        if(!isManualMode) {
+        //if(!isManualMode) {
             // We iterate circularly the mBuffer from the begin index to the end index, and if one of the values exceed the threshold the method returns true.
             // Also The range with the old ENCODING_PCM_16BIT was [-32768, 32767], while now with the new ENCODING_PCM_FLOAT it is [-1, 1],
             // so to convert the values of the new range into those of the old range (the threshold is based on the old values) I have to multiply them by 32767.
@@ -465,9 +559,9 @@ public class Recorder {
             } else {
                 return false;
             }
-        }else{
-            return true;  //in this way if we are in manual mode the recording will run until we call end()
-        }
+        //}else{
+        //    return true;  //in this way if we are in manual mode the recording will run until we call end()
+        //}
     }
 
     private void notifyVolumeLevel(float[] buffer, int begin, int end) {
@@ -599,7 +693,11 @@ public class Recorder {
          * @param size The peersSize of the actual data in {@code data}.
          */
         public void onVoice(@NonNull float[] data, int size) {
-            Log.e("recorder","onVoice");
+            Log.e("recorder","onVoice: "+ size);
+        }
+
+        public void onVoiceStream(@NonNull float[] data, int size) {
+            Log.e("recorder","onVoiceStream: "+ size);
         }
 
         /**
@@ -633,6 +731,11 @@ public class Recorder {
         @Override
         public void onVoice(@NonNull float[] data, int size) {
             super.onVoice(data, size);
+        }
+
+        @Override
+        public void onVoiceStream(@NonNull float[] data, int size) {
+            super.onVoiceStream(data, size);
         }
 
         @Override

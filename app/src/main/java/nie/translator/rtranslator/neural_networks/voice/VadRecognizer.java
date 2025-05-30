@@ -63,7 +63,7 @@ public class VadRecognizer extends NeuralNetworkApi {
             public void run() {
                 //try {
                     Log.i("recognizer", "Start to initialize model");
-                    vadOfflineRecog = new VadOfflineRecog(global);
+                    vadOfflineRecog = new VadOfflineRecog(global); //VadOfflineRecog.getInstance(global);//
 
                     initListener.onInitializationFinished();
                 //} catch (OrtException e) {
