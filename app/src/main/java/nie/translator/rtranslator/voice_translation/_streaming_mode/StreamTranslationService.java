@@ -227,7 +227,12 @@ public class StreamTranslationService extends VoiceTranslationService {
             public void onVoiceStream(@NonNull float[] data, int size) {
                 super.onVoiceStream(data,size);
 
-                Log.e("service","onVoiceStream: "+ size);
+                manualRecognizingFirstLanguage = true;
+
+                Log.e("service","onVoiceStream: "+ size + " "+ manualRecognizingFirstLanguage
+                + " "+ manualRecognizingSecondLanguage+ " "+ manualRecognizingAutoLanguage
+                + " "+ manualRecognizingAutoLanguage+ " "+ isMicAutomatic
+                );
                 if(manualRecognizingFirstLanguage){
                     // we start the speech recognition in only the first language
                     speechRecognizer.recognize(data, SPEECH_BEAM_SIZE, firstLanguage.getCode());
@@ -282,12 +287,15 @@ public class StreamTranslationService extends VoiceTranslationService {
                 } else if (manualRecognizingSecondLanguage) {
                     translate(text, secondLanguage, firstLanguage, TRANSLATOR_BEAM_SIZE, false, secondResultTranslateListener);
                 }
+
+                Log.d("mic", "service onSpeechRecognizedResult");
                 manualRecognizingFirstLanguage = false;
                 manualRecognizingSecondLanguage = false;
             }
 
             @Override
             public void onError(int[] reasons, long value) {
+                Log.d("mic", "service onError");
                 manualRecognizingFirstLanguage = false;
                 manualRecognizingSecondLanguage = false;
                 notifyMicActivated();
@@ -412,6 +420,10 @@ public class StreamTranslationService extends VoiceTranslationService {
 
     @Override
     public void onDestroy() {
+        if(mVoiceRecorder != null) {
+            Log.d("mic", "service onDestroy stopRecording");
+            mVoiceRecorder.stopRecording();
+        }
         //disconnect speechRecognizerCallback
         speechRecognizer.removeMultiCallback(speechRecognizerCallback);
         speechRecognizer.removeCallback(speechRecognizerSingleCallback);

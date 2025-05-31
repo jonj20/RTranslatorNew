@@ -88,6 +88,7 @@
     <string name="home_conversation_mode">對話模式</string>
     <string name="title_fragment_conversation">對話</string>
     <string name="title_fragment_walkie_talkie">對講</string>
+    <string name="title_fragment_stream_translate">同声传译</string>
     <string name="title_fragment_notice">通知</string>
     <string name="title_fragment_user_data">輸入您的資料</string>
     <string name="title_fragment_download">模型下載</string>
@@ -138,4 +139,5 @@
     <string name="conversation_mode_running" >對話模式正在運行...</string>
     <string name="walkietalkie_mode" >對講機模式</string>
     <string name="walkietalkie_mode_running" >對講機模式正在運行...</string>
+    <string name="stream_trnaslate_mode_running" >同声传译正在运行...</string>
 </resources>

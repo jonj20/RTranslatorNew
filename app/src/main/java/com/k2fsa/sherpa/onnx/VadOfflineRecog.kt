@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import kotlin.concurrent.thread
 
 import android.content.Context
+import nie.translator.rtranslator.Global
 
 
 private const val TAG = "sherpa-onnx"
@@ -151,37 +152,23 @@ class VadOfflineRecog(context: Context) {
     }
 
 
-    public fun processVadSamples(batchSize:Int, samples: FloatArray, callback:VadCallback) {
-        val bufferSize = 512 // in samples
-        var readIndex = 0
-        Log.i(TAG, "processSamples : data[0]" + samples[0])
 
-        val buffer = ShortArray(bufferSize)
+    public fun processVadSamples(samples: FloatArray, callback:VadCallback) {
+        //Log.i(TAG, "processVadSamples: data size: " + samples.size)
+        vad.acceptWaveform(samples)
+        while(!vad.empty()) {
+            var segment = vad.front()
 
-        while(readIndex < samples.size) {
-            val len = if((samples.size - readIndex) > bufferSize)  bufferSize else samples.size - readIndex
-            Log.i(TAG, "sliceArray len:" + len + " readIndex:" + readIndex)
-            var sliceBuffer = samples.sliceArray(readIndex until readIndex + len)
-            readIndex += len
+            //segment.samples
+            callback.handle(segment.samples)
 
-            vad.acceptWaveform(sliceBuffer)
-            while(!vad.empty()) {
-                var segment = vad.front()
-                
-                //segment.samples
-
-
-                vad.pop();
-            }
+            vad.pop();
         }
-
     }
 
     public interface VadCallback {
-        fun notify(batchSize:Int, text:String, lang:String)
+        fun handle(datas: FloatArray)
     }
-
-
 
 
 

@@ -42,6 +42,7 @@ import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
+import androidx.core.widget.NestedScrollView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -91,7 +92,8 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
     private ButtonMic leftMicBtn;
     //private FloatingActionButton streamTranslationButton;
 
-
+    private NestedScrollView nestedScrollViewTop;
+    private NestedScrollView nestedScrollViewBottom;
     private EditText inputText;
     private EditText outputText;
 	private AppCompatImageButton exitButton;
@@ -183,6 +185,8 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
         sound = view.findViewById(R.id.soundButton);
         leftMicBtn = view.findViewById(R.id.buttonMicLeft);
         leftMicBtn.initialize(null, view.findViewById(R.id.leftLineL), view.findViewById(R.id.centerLineL), view.findViewById(R.id.rightLineL));
+        nestedScrollViewTop = view.findViewById(R.id.nestedScrollViewTop);
+        nestedScrollViewBottom = view.findViewById(R.id.nestedScrollViewBottom);
         inputText = view.findViewById(R.id.multiAutoCompleteTextView);
         outputText = view.findViewById(R.id.multiAutoCompleteTextView2);
         //lineSeparator = view.findViewById(R.id.lineSeparator);
@@ -254,6 +258,23 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
             }
         });
 
+        sound.setOnClickListenerForDeactivated(deactivatedClickListener);
+        sound.setOnClickListenerForTTSError(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(global, R.string.error_tts_toast, Toast.LENGTH_SHORT).show();
+            }
+        });
+        sound.setOnClickListenerForActivated(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (sound.isMute()) {
+                    startSound();
+                } else {
+                    stopSound();
+                }
+            }
+        });
 
         leftMicBtn.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -471,16 +492,17 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
                             public void onAnimationEnd() {
                                 super.onAnimationEnd();
                                 animationInput = null;
-                                translateButton.performClick(); //simluate
+                                //translateButton.performClick(); //simluate
                             }
                         });
                     }else{
+                        nestedScrollViewTop.fullScroll(View.FOCUS_DOWN);
                         animationInput = animator.animateInputDisappearance(activity, ttsInputButton, copyInputButton, cancelInputButton, new CustomAnimator.Listener() {
                             @Override
                             public void onAnimationEnd() {
                                 super.onAnimationEnd();
                                 animationInput = null;
-                                translateButton.performClick(); //simluate
+                                //translateButton.performClick(); //simluate
                             }
                         });
                     }
@@ -518,7 +540,7 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
                         animationOutput.cancel();
                     }
                     if(!s.toString().isEmpty()) {
-                         Log.d("button", "setVisibility VISIBLE");
+                        // Log.d("button", "setVisibility VISIBLE");
                         outputContainer.setVisibility(View.VISIBLE);
        
                         // animationOutput = animator.animateOutputAppearance(activity, outputContainer, lineSeparator, new CustomAnimator.Listener() {
@@ -529,8 +551,9 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
                         //     }
                         // });
                     }else{
-                        Log.d("button", "setVisibility GONE");
+                        //Log.d("button", "setVisibility GONE");
                         outputContainer.setVisibility(View.GONE);
+                        nestedScrollViewBottom.fullScroll(View.FOCUS_DOWN);
          
                         // animationOutput = animator.animateOutputDisappearance(activity, outputContainer, lineSeparator, new CustomAnimator.Listener() {
                         //     @Override
@@ -1033,7 +1056,7 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
 
     private void switchMicMode(boolean automatic){
         if(isMicAutomatic != automatic){
-            //walkieTalkieServiceCallback.onVoiceEnded();
+            //streamTranslationServiceCallback.onVoiceEnded();
             isMicAutomatic = automatic;
             if(!isMicAutomatic){  //we switched from automatic to manual
               
@@ -1330,15 +1353,10 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
             super.onMessage(message);
             if (message != null) {
                 //int messageIndex = mAdapter.getMessageIndex(message.getMessageID());
-
-
-                Log.d("stream", "===>onMessage:: "+ message.getMessage().getText() + "/"+ message.getMessageID() + "/"+ message.isFinal());
-  
+                Log.d("stream", "===>onMessage:: /"+ message.getMessage().getText() + "/"+ message.getMessageID() + "/"+ message.isFinal());
                 if(message.getMessageID() == -1) {// asr 
-
                     lastInputTextCache += message.getMessage().getText();
                     if(lastInputTextCache != null){
-                        Log.d("stream", "input text ");
                         inputText.setText(lastInputTextCache);
                     }
                 } else {
@@ -1349,10 +1367,7 @@ public class StreamTranslationFragment  extends Fragment implements MicrophoneCo
                         temp = message.getMessage().getText();
                     }
 
-                    Log.d("stream", "output text ");
-
                     if(lastOutputTextCache != null){
-                        Log.d("stream", "output text 2");
                         outputText.setText(lastOutputTextCache + temp);
                     }
                 }

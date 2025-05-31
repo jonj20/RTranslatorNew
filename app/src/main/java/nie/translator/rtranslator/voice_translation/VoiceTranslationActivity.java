@@ -639,7 +639,7 @@ public class VoiceTranslationActivity extends GeneralActivity {
 
     public synchronized void connectToStreamTranslationService(final VoiceTranslationService.VoiceTranslationServiceCallback callback, final ServiceCommunicatorListener responseListener) {
         // possible start of StreamTranslationService
-        startStreamTranslationService(buildNotification(WALKIE_TALKIE_FRAGMENT), new Global.ResponseListener() {
+        startStreamTranslationService(buildNotification(STREAM_TRANSLATION_FRAGMENT), new Global.ResponseListener() {
             @Override
             public void onSuccess() {
                 CustomServiceConnection streamTranslationServiceConnection = new CustomServiceConnection(new StreamTranslationService.StreamTranslationServiceCommunicator(connectionId));
@@ -729,6 +729,14 @@ public class VoiceTranslationActivity extends GeneralActivity {
         if (clickAction == CONVERSATION_FRAGMENT) {
             builder.setContentTitle(getString(R.string.title_fragment_conversation))
                     .setContentText(getString(R.string.conversation_mode_running))
+                    .setContentIntent(resultPendingIntent)
+                    .setSmallIcon(R.drawable.mic_icon)
+                    .setOngoing(true)
+                    .setChannelId(channelID)
+                    .build();
+        } else if (clickAction == STREAM_TRANSLATION_FRAGMENT) {
+            builder.setContentTitle(getString(R.string.title_fragment_stream_translate))
+                    .setContentText(getString(R.string.stream_trnaslate_mode_running))
                     .setContentIntent(resultPendingIntent)
                     .setSmallIcon(R.drawable.mic_icon)
                     .setOngoing(true)

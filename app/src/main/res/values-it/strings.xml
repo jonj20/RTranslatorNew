@@ -103,6 +103,7 @@
     <string name="home_conversation_mode">Modalità Conversazione</string>
     <string name="title_fragment_conversation">Conversazione</string>
     <string name="title_fragment_walkie_talkie">WalkieTalkie</string>
+    <string name="title_fragment_stream_translate">Stream Translate</string>
     <string name="title_fragment_notice">Avviso</string>
     <string name="title_fragment_user_data">Inserisci i tuoi dati</string>
     <string name="title_fragment_download">Download dei modelli</string>

@@ -89,6 +89,7 @@
     <string name="home_conversation_mode">Режим Розмови</string>
     <string name="title_fragment_conversation">Розмова</string>
     <string name="title_fragment_walkie_talkie">WalkieTalkie</string>
+    <string name="title_fragment_stream_translate">Stream Translate</string>
     <string name="title_fragment_notice">Повідомлення</string>
     <string name="title_fragment_user_data">Введіть ваші дані</string>
     <string name="title_fragment_download">Завантаження моделей</string>

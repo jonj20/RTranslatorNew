@@ -33,6 +33,7 @@ import androidx.annotation.Nullable;
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.voice_translation._conversation_mode._conversation.ConversationService;
 
+import com.k2fsa.sherpa.onnx.VadOfflineRecog;
 
 /**
  * Continuously records audio and notifies the {@link Recorder.Callback} when voice (or any
@@ -91,9 +92,8 @@ public class Recorder {
     AudioManager audioManager;
 
     //vad
-    //private VadOfflineRecog vadOfflineRecog;
+    private VadOfflineRecog vadOfflineRecog;
     private boolean mVoiceHearted = false;
-    private long mLastVoiceHeardStopMillis = Long.MAX_VALUE;
 
     public Recorder(Global global, boolean useBluetoothHeadset, @NonNull Callback callback, @Nullable ConversationService.BluetoothHeadsetCallback bluetoothHeadsetCallback) {
         this.useBluetoothHeadset = useBluetoothHeadset;
@@ -106,9 +106,9 @@ public class Recorder {
         mCallback = callback;
         mCallback.setRecorder(this);
 
-        //vadOfflineRecog = VadOfflineRecog.getInstance(global);//new VadOfflineRecog(global);
+        vadOfflineRecog = VadOfflineRecog.Companion.getInstance(global);
+        //vadOfflineRecog = new VadOfflineRecog(global);
         mVoiceHearted = false;
-        mLastVoiceHeardStopMillis = Long.MAX_VALUE;
 
         // Try to create a new recording session.
         mAudioRecord = createAudioRecord();
@@ -291,6 +291,16 @@ public class Recorder {
             AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, CHANNEL, ENCODING, minSizeInBytes);   //the option MIC produce better result than the option VOICE_RECOGNITION
             //audioRecord.setPreferredDevice()
             if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+
+                // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                //     // 启用回声消除（API 16+）
+                //     if (AcousticEchoCanceler.isAvailable()) {
+                //         echoCanceler = AcousticEchoCanceler.create(audioRecord!!.audioSessionId).apply {
+                //             enabled = true
+                //         }
+                //     }
+                // }
+
                 readSize = (minSizeInBytes/4)*2;
                 mBuffer = new float[((MAX_SPEECH_LENGTH_MILLIS+1000)/1000)*sampleRate];  //the buffer size will be larger (by one second) than the audio data of duration MAX_SPEECH_LENGTH_MILLIS
                 return audioRecord;
@@ -370,6 +380,7 @@ public class Recorder {
     }
 
     public void stopRecording(){
+        Log.d("mic", "service onDestroy stopRecording");
         end();
         stop();
     }
@@ -420,13 +431,12 @@ public class Recorder {
                     //we do the rest of voice processing
                     final long now = System.currentTimeMillis();
 
-
-                    if (isStreamMode) {  //manual test 
-
-                        if (isHearingVoice(mBuffer, oldTailIndex, tailIndex)) {
+                    //Log.i("mic", "ProcessVoice: isStreamMode: " + isStreamMode);
+                    if (isStreamMode) {  //manual test
+                        //get data from circle buffer
                             if (mLastVoiceHeardMillis == Long.MAX_VALUE) {    // use Long's maximum limit to indicate that we have no voice
                                 mVoiceStartedMillis = now;
-                                if(!Thread.currentThread().isInterrupted()  && (mLastVoiceHeardStopMillis == Long.MAX_VALUE)) {
+                                if(!Thread.currentThread().isInterrupted()) {
                                     mCallback.onVoiceStart();
                                 }
                                 if (getMBufferSize() > prevVoiceLength) {
@@ -440,61 +450,45 @@ public class Recorder {
                                 }
                             }
                             mLastVoiceHeardMillis = now;
-                            mVoiceHearted = true;
+                            notifyVoiceUpdate(mBuffer, oldTailIndex, tailIndex);
+                            
+                            // if (now - (mVoiceStartedMillis - global.getPrevVoiceDuration()) > MAX_SPEECH_LENGTH_MILLIS) {
+                            //     if(!Thread.currentThread().isInterrupted()) {
+                            //         end();
+                            //     }
+                            // }
+                    } else {
+                        if (isManualMode || isHearingVoice(mBuffer, oldTailIndex, tailIndex)) {
+                            if (mLastVoiceHeardMillis == Long.MAX_VALUE) {    // use Long's maximum limit to indicate that we have no voice
+                                mVoiceStartedMillis = now;
+                                if(!Thread.currentThread().isInterrupted()) {
+                                    mCallback.onVoiceStart();
+                                }
+                                if (getMBufferSize() > prevVoiceLength) {
+                                    if (tailIndex - prevVoiceLength >= 0) {
+                                        startVoiceIndex = tailIndex - prevVoiceLength;
+                                    } else {
+                                        startVoiceIndex = mBuffer.length + (tailIndex - prevVoiceLength);  //we do a jump
+                                    }
+                                } else {
+                                    startVoiceIndex = headIndex;
+                                }
+                            }
+                            mLastVoiceHeardMillis = now;
                             if (now - (mVoiceStartedMillis - global.getPrevVoiceDuration()) > MAX_SPEECH_LENGTH_MILLIS) {
                                 if(!Thread.currentThread().isInterrupted()) {
                                     end();
                                 }
                             }
-                        } else {
-
-                            if (mLastVoiceHeardMillis != Long.MAX_VALUE) {
-                                if ((now - mLastVoiceHeardMillis > 800)  && mVoiceHearted) {
-                                    if(!Thread.currentThread().isInterrupted()) {
-                                        updateVoice();  //
-                                        mLastVoiceHeardStopMillis = now;
-                                        mVoiceHearted = false;
-                                    }
+                        } else if (mLastVoiceHeardMillis != Long.MAX_VALUE) {
+                            if (now - mLastVoiceHeardMillis > global.getSpeechTimeout()) {
+                                if(!Thread.currentThread().isInterrupted()) {
+                                    end();
                                 }
-                
-                            }
-
-                         
-                        } 
-
-                    } else {
-
-                    if (isManualMode || isHearingVoice(mBuffer, oldTailIndex, tailIndex)) {
-                        if (mLastVoiceHeardMillis == Long.MAX_VALUE) {    // use Long's maximum limit to indicate that we have no voice
-                            mVoiceStartedMillis = now;
-                            if(!Thread.currentThread().isInterrupted()) {
-                                mCallback.onVoiceStart();
-                            }
-                            if (getMBufferSize() > prevVoiceLength) {
-                                if (tailIndex - prevVoiceLength >= 0) {
-                                    startVoiceIndex = tailIndex - prevVoiceLength;
-                                } else {
-                                    startVoiceIndex = mBuffer.length + (tailIndex - prevVoiceLength);  //we do a jump
-                                }
-                            } else {
-                                startVoiceIndex = headIndex;
                             }
                         }
-                        mLastVoiceHeardMillis = now;
-                        if (now - (mVoiceStartedMillis - global.getPrevVoiceDuration()) > MAX_SPEECH_LENGTH_MILLIS) {
-                            if(!Thread.currentThread().isInterrupted()) {
-                                end();
-                            }
-                        }
-                    } else if (mLastVoiceHeardMillis != Long.MAX_VALUE) {
-                        if (now - mLastVoiceHeardMillis > global.getSpeechTimeout()) {
-                            if(!Thread.currentThread().isInterrupted()) {
-                                end();
-                            }
-                        }
+
                     }
-
-                }
 
 
                 }
@@ -626,6 +620,34 @@ public class Recorder {
             mCallback.onVolumeLevel(average);
         }
     }
+
+    private void notifyVoiceUpdate(float[] buffer, int begin, int end) {
+        //Log.e("recorder","notifyVoiceUpdate "+isRecording+" " + begin +" "+ end);
+        if(isRecording){
+            float[] tempBuffer = new float[getMBufferRangeSize(begin, end)];
+            int count = begin;
+            int linearCount = 0;
+
+            while (count != end) {
+                tempBuffer[linearCount] = buffer[count];
+                if (count < buffer.length - 1) {
+                    count++;
+                } else {
+                    count = 0;
+                }
+                linearCount++;
+            }
+
+            //Log.e("recorder","notifyVoiceUpdate " + linearCount);
+            vadOfflineRecog.processVadSamples(tempBuffer, new VadOfflineRecog.VadCallback() {
+                @Override
+                public void handle(float[] buffer) {
+                    mCallback.onVoiceStream(buffer, buffer.length);
+                }
+            });
+        }
+    }
+
 
     public boolean isOnHeadsetSco(){
         return connectedBleHeadset != null;
